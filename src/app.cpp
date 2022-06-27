@@ -1,6 +1,8 @@
 #include "app.hpp"
 
 #include <iostream>
+#include <shlwapi.h>
+#include <tchar.h>
 #include <d3/d3renderstream.h>
 
 #include "scene.hpp"
@@ -10,13 +12,30 @@
 
 App* App::s_instance = nullptr;
 
-App::App() : m_window		(nullptr), 
+App::App() : m_window		(nullptr),
+             m_rsLib        (nullptr),
 			 m_currentScene	(nullptr),
 			 m_windowWidth	(800.f),
 			 m_windowHeight	(600.f)
 {
 	s_instance = this;
     loadRenderStream();
+}
+
+void App::loadRenderStream() {
+    HKEY key;
+    RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\d3 Technologies\\d3 Production Suite"), 0, KEY_READ, &key);
+    TCHAR buf[512];
+    DWORD bufSize = sizeof(buf);
+    RegQueryValueEx(key, TEXT("exe path"), 0, nullptr, reinterpret_cast<LPBYTE>(buf), &bufSize);
+    PathRemoveFileSpec(buf);
+    _tcscat_s(buf, bufSize, TEXT("\\d3renderstream.dll"));
+    HMODULE hLib = LoadLibraryEx(buf, NULL, 
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR    | 
+        LOAD_LIBRARY_SEARCH_APPLICATION_DIR | 
+        LOAD_LIBRARY_SEARCH_SYSTEM32        | 
+        LOAD_LIBRARY_SEARCH_USER_DIRS);
+    std::cout << GetLastError();
 }
 
 App* App::getInstance() {
@@ -69,17 +88,17 @@ int App::run() {
 	scene.addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1000.f, VEC1, "LINUS.jpg" });
 	//sphere->rotate(92.f, glm::vec3(1, 0, 0));
 
-	while (!glfwWindowShouldClose(m_window)) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//while (!glfwWindowShouldClose(m_window)) {
+	//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		Control::update();
+	//	Control::update();
 
-		m_currentScene->update();
-		m_currentScene->render();
+	//	m_currentScene->update();
+	//	m_currentScene->render();
 
-		glfwSwapBuffers(m_window);
-		glfwPollEvents();
-	}
+	//	glfwSwapBuffers(m_window);
+	//	glfwPollEvents();
+	//}
 
 	return 0;
 }
