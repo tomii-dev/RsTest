@@ -5,3 +5,9 @@ Debug/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+lib/
+include/d3/
+include/GL/
+include/GLFW/
+include/glm/
+include/stb/
