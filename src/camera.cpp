@@ -11,7 +11,6 @@ Camera::Camera(Scene* scene, glm::vec3 position, float fov)
 	  m_position	(position),
 	  m_front		(1, 0, 0),
 	  m_up			(0, 1, 0),
-	  m_yawPitch	(0, 0),
 	  m_fov			(fov)
 {}
 
@@ -29,12 +28,11 @@ void Camera::move(glm::vec3 dir) {
 	m_scene->updateMatrices();
 }
 
-void Camera::rotate(glm::vec2 dir) {
-	m_yawPitch += dir;
+void Camera::setRotation(float pitch, float yaw, float roll) {
 	m_front = glm::normalize(glm::vec3(
-		cos(glm::radians(m_yawPitch.x)) * cos(glm::radians(m_yawPitch.y)),
-		sin(glm::radians(m_yawPitch.y)),
-		sin(glm::radians(m_yawPitch.x)) * cos(glm::radians(m_yawPitch.y))
+		cos(glm::radians(pitch) * cos(glm::radians(yaw))),
+		sin(glm::radians(yaw)),
+		sin(glm::radians(roll) * cos(glm::radians(yaw)))
 	));
 	m_scene->updateMatrices();
 }

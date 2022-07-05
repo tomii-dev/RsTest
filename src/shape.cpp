@@ -78,7 +78,6 @@ void Shape::update() {
 
 void Shape::draw() {
 	glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, nullptr);
-	utils::checkGLError();
 }
 
 Cube::Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour, std::string texPath)

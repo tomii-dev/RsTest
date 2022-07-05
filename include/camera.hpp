@@ -12,7 +12,7 @@ class Camera {
 	glm::vec3 m_position;
 	glm::vec3 m_front;
 	glm::vec3 m_up;
-	glm::vec2 m_yawPitch;
+	glm::vec3 m_rot;
 	float m_fov;
 public:
 	Camera(Scene* scene, glm::vec3 position=VEC0, float fov=45.f);
@@ -21,7 +21,7 @@ public:
 	glm::vec3 getUp();
 	void setPosition(glm::vec3 pos);
 	void move(glm::vec3 dir);
-	void rotate(glm::vec2 dir);
+	void setRotation(float pitch, float yaw, float roll);
 	void moveForward(float amount=1.f);
 	void moveBackward(float amount=1.f);
 	void moveLeft(float amount=1.f);

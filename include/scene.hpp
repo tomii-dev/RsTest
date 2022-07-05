@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <string>
+#include <d3/d3renderstream.h>
 
 #include "camera.hpp"
 

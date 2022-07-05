@@ -6,64 +6,37 @@
 #include <sstream>
 #include <algorithm>
 
+#include "app.hpp"
+
 namespace utils {
 
-	stbi_uc* loadImgBuffer;
-	unsigned int utilShader;
+	decltype(rs_initialiseGpGpuWithOpenGlContexts)* rsInitialiseGpuOpenGl;
+	decltype(rs_getStreams)* rsGetStreams;
+	decltype(rs_sendFrame)* rsSendFrame;
+	decltype(rs_getFrameCamera)* rsGetFrameCamera;
+	decltype(rs_awaitFrameData)* rsAwaitFrameData;
+	decltype(rs_logToD3)* logToD3;
+	decltype(rs_shutdown)* rsShutdown;
 
-	ShaderProgramSource parseShader(const std::string& path) {
-		std::ifstream stream(path);
-
-		enum class ShaderType { NONE = -1, VERTEX = 0, FRAGMENT = 1 };
-
-		std::string line;
-		std::stringstream ss[2];
-		ShaderType type = ShaderType::NONE;
-		while (getline(stream, line)) {
-			if (line.find("#shader") == std::string::npos) {
-				ss[(int)type] << line << '\n';
-				continue;
-			}
-			if (line.find("vertex") != std::string::npos)
-				type = ShaderType::VERTEX;
-			else if (line.find("fragment") != std::string::npos)
-				type = ShaderType::FRAGMENT;
-		}
-
-		return { ss[0].str(), ss[1].str() };
-	}
-
-	unsigned int compileShader(unsigned int type, const std::string& source)
-	{
-		unsigned int id = glCreateShader(type);
-		const char* src = &source[0];
-		glShaderSource(id, 1, &src, nullptr);
-		glCompileShader(id);
-		int res;
-		glGetShaderiv(id, GL_COMPILE_STATUS, &res);
-		if (!res)
-		{
-			int len;
-			glGetShaderiv(id, GL_INFO_LOG_LENGTH, &len);
-			char* msg = (char*)alloca(len * sizeof(char));
-			glGetShaderInfoLog(id, len, &len, msg);
-			std::cout << "failed to compile" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << "shader" << std::endl;
-			std::cout << msg << std::endl;
-			glDeleteShader(id);
-			return 0;
-		}
-
-		return id;
-	}
-
-	unsigned int createShader(const std::string& vertexShader, const std::string& fragmentShader)
+	unsigned int createShader(const GLchar* vsSrc[], const GLchar* fsSrc[])
 	{
 		unsigned int program = glCreateProgram();
-		unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexShader);
-		unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentShader);
+		GLint compiled = GL_FALSE;
 
+		GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(vs, 1, vsSrc, NULL);
 		glAttachShader(program, vs);
+		glGetShaderiv(vs, GL_COMPILE_STATUS, &compiled);
+		if (!compiled)
+			logToD3("failed to compile vertex shader");
+
+		GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(fs, 1, fsSrc, NULL);
 		glAttachShader(program, fs);
+		glGetShaderiv(fs, GL_COMPILE_STATUS, &compiled);
+		if (!compiled)
+			logToD3("failed to compile frag shader");
+
 		glLinkProgram(program);
 		glValidateProgram(program);
 
@@ -72,96 +45,86 @@ namespace utils {
 
 		return program;
 	}
-
-	void setup() {
-		ShaderProgramSource source = parseShader("debug.shader");
-		utilShader = createShader(source.vertexSource, source.fragmentSource);
-		glLinkProgram(utilShader);
-
-		int w, h, c;
-		stbi_set_flip_vertically_on_load(1);
-		loadImgBuffer = stbi_load("load.jpg", &w, &h, &c, 4);
-	}
-
-	void drawDebugLine(glm::vec3 point1, glm::vec3 point2) {
-		glUseProgram(utilShader);
-
-		glm::mat4 projection = glm::perspective(glm::radians(35.0f), 640.f / 480.f, 0.1f, 100.0f);
-		glm::mat4 view = glm::lookAt(
-			glm::vec3(4, 3, 3),
-			glm::vec3(0, 0, 0),
-			glm::vec3(0, 1, 0)
-		);
-		glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 mvp = projection * view * model;
-
-		unsigned int matId = glGetUniformLocation(utilShader, "u_Mvp");
-		glUniformMatrix4fv(matId, 1, GL_FALSE, &mvp[0][0]);
-
-		glBegin(GL_LINES);
-		glVertex3f(point1.x, point1.y, point1.z);
-		glVertex3f(point2.x, point2.y, point2.z);
-		glEnd();
-	}
-
-	glm::vec3 normal(glm::vec3 point1, glm::vec3 point2, glm::vec3 point3) {
-		glm::vec3 cross = glm::cross(point1 - point2, point1 - point3);
-		float m = sqrt(
-			pow(cross.x, 2) + 
-			pow(cross.y, 2) + 
-			pow(cross.z, 2)
-		);
-		return glm::abs(glm::vec3(cross.x / m, cross.y / m, cross.z / m));
-	}
-
-	std::string vecStr(glm::vec3 vec) {
-		std::stringstream ss;
-		ss << vec.x << ", " << vec.y << ", " << vec.z << "\n";
-		return ss.str();
-	}
-
-	void removeDup(std::vector<glm::vec3>& vec) {
-		std::vector<glm::vec3> temp;
-		for (glm::vec3 v : vec) {
-			if (std::find(temp.begin(), temp.end(), v) != temp.end())
-				continue;
-			if (std::find(temp.begin(), temp.end(), -v) != temp.end())
-				continue;
-			temp.push_back(v);
-		}
-		vec = temp;
-	}
-
-	template<typename T>
-	int getIndex(std::vector<T>& vec, T val) {
-		typename std::vector<T>::iterator it;
-		it = std::find(vec.begin(), vec.end(), val);
-		if (it != vec.cend())
-			return std::distance(vec.begin(), it);
-		return -1;
-	}
-
-	template<typename T>
-	void fillVec(std::vector<T>& vec, T val, int count) {
-		for (int i = 0; i < count; ++i)
-			vec.push_back(val);
-	}
-
-	void checkGLError()
+	 
+	void checkGLError(const char* add)
 	{
 		GLenum err;
-		while ((err = glGetError()) != GL_NO_ERROR) {
-			std::cout << gluErrorString(err) << '\n';
+		while (err = glGetError()) {
+			char* str = (char*)gluErrorString(err);
+			strcat_s(str, sizeof(char)*100, add);
+			logToD3(str);
 		}
 	}
 
-	float radToDeg(float rad){
-		return rad * 180.0f / PI;
+	const StreamDescriptions* getStreams(std::vector<uint8_t>& desc) {		
+		uint32_t bytes;
+		rsGetStreams(nullptr, &bytes);
+
+		RS_ERROR res = RS_ERROR_BUFFER_OVERFLOW;
+		const static int MAX_TRIES = 3;
+		int it = 0;
+
+		while (res == RS_ERROR_BUFFER_OVERFLOW && it < MAX_TRIES) {
+			desc.resize(bytes);
+			res = rsGetStreams(reinterpret_cast<StreamDescriptions*>(&desc[0]), &bytes);
+			++it;
+		}
+
+		if (res != RS_ERROR_SUCCESS)
+			throw std::runtime_error("issue getting streams :(");
+		if (bytes < sizeof(StreamDescriptions))
+			throw std::runtime_error("invalid stream descriptions :(");
+
+		return reinterpret_cast<const StreamDescriptions*>(&desc[0]);
 	}
 
-	void drawLoadingScreen(GLFWwindow* window) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDrawPixels(1920, 1080, GL_RGBA, GL_UNSIGNED_BYTE, loadImgBuffer);
-		glfwSwapBuffers(window);
+	GLint glInternalFormat(RSPixelFormat format) {
+		switch (format) {
+		case RS_FMT_BGRA8:
+		case RS_FMT_BGRX8:
+			return GL_RGBA8;
+		case RS_FMT_RGBA32F:
+			return GL_RGBA32F;
+		case RS_FMT_RGBA16:
+			return GL_RGBA16;
+		case RS_FMT_RGBA8:
+		case RS_FMT_RGBX8:
+			return GL_RGBA8;
+		default:
+			throw std::runtime_error("Unhandled RS pixel format");
+		}
+	}
+
+	GLint glFormat(RSPixelFormat format) {
+		switch (format) {
+		case RS_FMT_BGRA8:
+		case RS_FMT_BGRX8:
+			return GL_BGRA;
+		case RS_FMT_RGBA32F:
+		case RS_FMT_RGBA16:
+		case RS_FMT_RGBA8:
+		case RS_FMT_RGBX8:
+			return GL_RGBA;
+		default:
+			throw std::runtime_error("Unhandled RS pixel format");
+		}
+	}
+
+	GLenum glType(RSPixelFormat format) {
+		switch (format)
+		{
+		case RS_FMT_BGRA8:
+		case RS_FMT_BGRX8:
+			return GL_UNSIGNED_BYTE;
+		case RS_FMT_RGBA32F:
+			return GL_FLOAT;
+		case RS_FMT_RGBA16:
+			return GL_UNSIGNED_SHORT;
+		case RS_FMT_RGBA8:
+		case RS_FMT_RGBX8:
+			return GL_UNSIGNED_BYTE;
+		default:
+			throw std::runtime_error("Unhandled RS pixel format");
+		}
 	}
 }

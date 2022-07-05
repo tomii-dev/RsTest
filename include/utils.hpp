@@ -10,51 +10,43 @@
 #include <glm/vec3.hpp>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
+#include <d3/d3renderstream.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #define PI 3.1415926535897932384626433832795028841
 
+struct RenderTarget {
+	GLuint texture;
+	GLuint frameBuf;
+};
+
+typedef std::unordered_map<StreamHandle, RenderTarget> TargetMap;
+
 namespace utils {
 
-	enum VboType {
-		VBO_2D = 2,
-		VBO_3D = 3
-	};
+	// rs functions
+	extern decltype(rs_initialiseGpGpuWithOpenGlContexts)* rsInitialiseGpuOpenGl;
+	extern decltype(rs_getStreams)* rsGetStreams;
+	extern decltype(rs_sendFrame)* rsSendFrame;
+	extern decltype(rs_getFrameCamera)* rsGetFrameCamera;
+	extern decltype(rs_awaitFrameData)* rsAwaitFrameData;
+	extern decltype(rs_logToD3)* logToD3;
+	extern decltype(rs_shutdown)* rsShutdown;
 
 	struct ShaderProgramSource {
 		std::string vertexSource;
 		std::string fragmentSource;
 	};
 
-	extern stbi_uc* loadImgBuffer;
-
-	// return ShaderProgramSource for shader passed by path
-	ShaderProgramSource parseShader(const std::string& path);
-
-	unsigned int compileShader(unsigned int type, const std::string& source);
-
 	// create shader and return program id
-	unsigned int createShader(const std::string& vertexShader, const std::string& fragmentShader);
+	unsigned int createShader(const GLchar* vsSrc[], const GLchar* fsSrc[]);
 
-	void setup();
+	void checkGLError(const char* add = nullptr);
 
-	void drawDebugLine(glm::vec3 point1, glm::vec3 point2);
-	glm::vec3 normal(glm::vec3 point1, glm::vec3 point2, glm::vec3 point3);
-	std::string vecStr(glm::vec3 vec);
-
-	// remove duplicate vectors (x, y, z) from vector (data structure)
-	void removeDup(std::vector<glm::vec3>& vec);
-
-	// get index of value in vector
-	template<typename T>
-	int getIndex(std::vector<T>& vec, T val);
-
-	template<typename T>
-	void fillVec(std::vector<T>& vec, T val, int count);
-
-	void checkGLError();
-	float radToDeg(float rad);
-
-	void drawLoadingScreen(GLFWwindow* window);
+	const StreamDescriptions* getStreams(std::vector<uint8_t>& desc);
+	GLint glInternalFormat(RSPixelFormat format);
+	GLint glFormat(RSPixelFormat format);
+	GLenum glType(RSPixelFormat format);
 }

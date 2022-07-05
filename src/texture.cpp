@@ -1,7 +1,7 @@
 #include "texture.hpp"
 
 #include <GL/glew.h>
-#include "vendors/stb_image.h"
+#include <stb/stb_image.h>"
 
 Texture::Texture() {}
 
