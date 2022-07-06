@@ -20,8 +20,8 @@ App::App() : m_window		(nullptr),
 			 m_currentScene	(nullptr),
 			 m_rsLib		(nullptr),
 			 m_header		(nullptr),
-			 m_windowWidth	(800.f),
-			 m_windowHeight	(600.f)
+			 m_windowWidth	(1920.f),
+			 m_windowHeight	(1080.f)
 {
 	s_instance = this;
     loadRenderStream();
@@ -87,18 +87,21 @@ int App::handleStreams() {
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-				utils::checkGLError(" setting tex params");
 
 				glTexImage2D(GL_TEXTURE_2D, 0, utils::glInternalFormat(desc.format), desc.width, desc.height, 0, utils::glFormat(desc.format), utils::glType(desc.format), nullptr);
-				utils::checkGLError(" creating tex img");
 
 				glBindTexture(GL_TEXTURE_2D, 0);
-				glGenFramebuffers(1, &target.frameBuf);
 
+				glGenFramebuffers(1, &target.frameBuf);
 				glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
-				utils::checkGLError(" binding frame buffer");
+
+				unsigned int rbo;
+				glGenRenderbuffers(1, &rbo);
+				glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+				glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, desc.width, desc.height);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
 				glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target.texture, 0);
-				utils::checkGLError(" setting framebuffer texture");
 
 				GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
 				glDrawBuffers(1, bufs);
@@ -167,22 +170,22 @@ int App::run() {
 		return -1;
 	}
 
-	//glfwHideWindow(m_window);
+	glfwHideWindow(m_window);
 	glfwMakeContextCurrent(m_window);
 
 	glewExperimental = GL_TRUE;
 	glewInit();
 
-	HGLRC wglContext = glfwGetWGLContext(m_window);
-	HDC dc = GetDC(glfwGetWin32Window(m_window));
-
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+
+	HGLRC wglContext = glfwGetWGLContext(m_window);
+	HDC dc = GetDC(glfwGetWin32Window(m_window));
 
 	Scene scene(this);
 	setScene(&scene);
 
-	LightSource* light = scene.addLightSource(glm::vec3(-15.f, 15.f, 15.f), 1.f, .4f, VEC1);
+	LightSource* light = scene.addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
 	Object* sphere = scene.addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, glm::vec3(0, .7f, 1.f)});
 
 	utils::rsInitialiseGpuOpenGl(wglContext, dc);

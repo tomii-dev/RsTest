@@ -10,7 +10,7 @@
 #include "utils.hpp"
 #include "app.hpp"
 
-Scene::Scene(App* app) : m_app(app), m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1), 70.f) )
+Scene::Scene(App* app) : m_app(app), m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) )
 {
     const GLchar* vsSource[] = {R"src(#version 120
     attribute vec4 a_Position;
