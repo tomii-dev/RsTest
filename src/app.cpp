@@ -141,7 +141,6 @@ int App::sendFrames() {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			m_currentScene->update();
 			m_currentScene->render();
-			glfwSwapBuffers(m_window);
 		}
 	}
 	return 0;
@@ -186,11 +185,13 @@ int App::run() {
 	setScene(&scene);
 
 	LightSource* light = scene.addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
-	Object* sphere = scene.addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, glm::vec3(0, .7f, 1.f)});
+	Object* sphere = scene.addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1, "LINUS.jpg" });
 
 	utils::rsInitialiseGpuOpenGl(wglContext, dc);
 
 	while (true) {
+
+		sphere->setPosition(sphere->getPosition() + glm::vec3(0, 0, -.01f));
 
 		if(handleStreams())
 			break;
