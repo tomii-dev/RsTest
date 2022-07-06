@@ -138,9 +138,6 @@ int App::sendFrames() {
 			if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
 				return 1;
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			m_currentScene->update();
-			m_currentScene->render();
 		}
 	}
 	return 0;
