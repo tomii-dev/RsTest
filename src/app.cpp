@@ -191,7 +191,7 @@ int App::run()
 	HGLRC wglContext = glfwGetWGLContext(m_window);
 	HDC dc = GetDC(glfwGetWin32Window(m_window));
 
-    m_currentScene = new Scene(this);
+    m_currentScene = new Scene();
 
 	LightSource* light = m_currentScene->addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
 	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1, "LINUS.jpg" });
