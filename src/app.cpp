@@ -60,7 +60,8 @@ int App::loadRenderStream()
 	LOAD_FN(rs_awaitFrameData);
 	LOAD_FN(rs_shutdown);
 
-	rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR);
+    if (rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR))
+        return utils::error("failed to init RenderStream!");
 
 	utils::rsInitialiseGpuOpenGl	= rs_initialiseGpGpuWithOpenGlContexts;
 	utils::logToD3					= rs_logToD3;
