@@ -40,10 +40,12 @@ namespace utils {
 		std::string fragmentSource;
 	};
 
+    int error(const std::string& msg="");
+
 	// create shader and return program id
 	unsigned int createShader(const GLchar* vsSrc[], const GLchar* fsSrc[]);
 
-	void checkGLError(const char* add = nullptr);
+	void checkGLError(const std::string& add = "");
 
 	const StreamDescriptions* getStreams(std::vector<uint8_t>& desc);
 	GLint glInternalFormat(RSPixelFormat format);
