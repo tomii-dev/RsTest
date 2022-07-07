@@ -16,6 +16,7 @@
 class Scene;
 
 class App {
+private:
 	GLFWwindow* m_window;
 	float m_windowWidth;
 	float m_windowHeight;
@@ -25,9 +26,8 @@ class App {
 	TargetMap m_targets;
 	FrameData m_frame;
 	const StreamDescriptions* m_header;
-	std::vector<uint8_t> m_desc;
-	void setScene(Scene* scene);
-    void loadRenderStream();
+    std::vector<uint8_t> m_desc;
+    int loadRenderStream();
 	int handleStreams();
 	int sendFrames();
 public:
@@ -35,8 +35,6 @@ public:
 	int run();
 	float getWindowWidth();
 	float getWindowHeight();
-	GLFWwindow* getWindow();
-	Scene* getScene();
 	void setWindowWidth(float width);
 	void setWindowHeight(float height);
 	static App* getInstance();
