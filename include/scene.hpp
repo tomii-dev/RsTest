@@ -30,7 +30,6 @@ struct ObjectArgs {
 };
 
 class Scene{
-    App* m_app;
     Camera* m_currentCamera;
     unsigned int m_shader;
     glm::mat4 m_view;
@@ -39,7 +38,7 @@ class Scene{
     std::vector<LightSource> m_lightSources;
     std::vector<Camera> m_cameras;
 public:
-    Scene(App* app);
+    Scene();
     ~Scene();
     void updateMatrices();
     void update();
