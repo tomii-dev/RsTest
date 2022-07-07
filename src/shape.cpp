@@ -17,14 +17,14 @@ Shape::Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour, std::str
 
 void Shape::init() {
 
-	unsigned int shader = m_scene->getShader();
+	const unsigned int shader = m_scene->getShader();
 
 	// generate vertex array
 	glGenVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 
 	// generate vertex buffer
-	unsigned int posLoc = glGetAttribLocation(shader, "a_Position");
+	const unsigned int posLoc = glGetAttribLocation(shader, "a_Position");
 	glGenBuffers(1, &m_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*m_vertices.size(), m_vertices.data(), GL_DYNAMIC_DRAW);
@@ -37,7 +37,7 @@ void Shape::init() {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*m_indices.size(), m_indices.data(), GL_DYNAMIC_DRAW);
 
 	// generate normal buffer
-	unsigned int normLoc = glGetAttribLocation(shader, "a_Normal");
+	const unsigned int normLoc = glGetAttribLocation(shader, "a_Normal");
 	glGenBuffers(1, &m_nbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_nbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*m_vertices.size(), m_normals.data(), GL_DYNAMIC_DRAW);
@@ -45,7 +45,7 @@ void Shape::init() {
 	glVertexAttribPointer(normLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
 
 	// generate tex coord buffer
-	unsigned int texCoordLoc = glGetAttribLocation(shader, "a_TexCoord");
+	const unsigned int texCoordLoc = glGetAttribLocation(shader, "a_TexCoord");
 	glGenBuffers(1, &m_tbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_tbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_texCoords.size(), m_texCoords.data(), GL_DYNAMIC_DRAW);
@@ -57,19 +57,19 @@ void Shape::update() {
 
 	Object::update();
 
-	unsigned int shader = m_scene->getShader();
+	const unsigned int shader = m_scene->getShader();
 
 	glBindVertexArray(m_vao);
 
 	// set colour uniform
-	unsigned int colorLoc = glGetUniformLocation(shader, "u_ObjectColour");
+	const unsigned int colorLoc = glGetUniformLocation(shader, "u_ObjectColour");
 	glUniform3fv(colorLoc, 1, &m_colour[0]);
 
 	// bind and set texture
 	unsigned int isTexLoc = glGetUniformLocation(shader, "u_IsTextured");
 	if (m_texture.getWidth()) {
 		m_texture.bind();
-		unsigned int texLoc = glGetUniformLocation(shader, "u_Texture");
+		const unsigned int texLoc = glGetUniformLocation(shader, "u_Texture");
 		glUniform1i(texLoc, 0);
 		glUniform1i(isTexLoc, 1);
 	}

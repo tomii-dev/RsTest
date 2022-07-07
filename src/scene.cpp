@@ -10,7 +10,7 @@
 #include "utils.hpp"
 #include "app.hpp"
 
-Scene::Scene(App* app) : m_app(app), m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) )
+Scene::Scene() : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) )
 {
     const GLchar* vsSource[] = {R"src(#version 120
     attribute vec4 a_Position;
@@ -76,19 +76,20 @@ Scene::~Scene(){
 }
 
 void Scene::updateMatrices() {
-    float width = m_app->getWindowWidth();
-    float height = m_app->getWindowHeight();
-    glm::vec3 camPos(m_currentCamera->getPosition());
-    glm::vec3 camFront(m_currentCamera->getFront());
-    glm::vec3 camUp(m_currentCamera->getUp());
-    glm::mat4 m_projection 
-        = glm::perspective(glm::radians(m_currentCamera->getFov()), width / height, 0.1f, 9000.0f);
-    glm::mat4 m_view = glm::lookAt(camPos, camPos + camFront, camUp);
-    unsigned int viewLoc = glGetUniformLocation(m_shader, "u_View");
-    unsigned int projLoc = glGetUniformLocation(m_shader, "u_Proj");
+    App* app = App::getInstance();
+    const float width = app->getWindowWidth();
+    const float height = app->getWindowHeight();
+    const glm::vec3 camPos(m_currentCamera->getPosition());
+    const glm::vec3 camFront(m_currentCamera->getFront());
+    const glm::vec3 camUp(m_currentCamera->getUp());
+    const glm::mat4 m_projection = glm::perspective(glm::radians(m_currentCamera->getFov()), width / height, 0.1f, 9000.0f);
+    const glm::mat4 m_view = glm::lookAt(camPos, camPos + camFront, camUp);
+
+    const unsigned int viewLoc = glGetUniformLocation(m_shader, "u_View");
+    const unsigned int projLoc = glGetUniformLocation(m_shader, "u_Proj");
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &m_view[0][0]);
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, &m_projection[0][0]);
-    unsigned int mvpLoc = glGetUniformLocation(m_shader, "u_Mvp");
+    const unsigned int mvpLoc = glGetUniformLocation(m_shader, "u_Mvp");
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, &(m_projection * m_view)[0][0]);
 }
 
@@ -97,14 +98,15 @@ void Scene::update(){
         std::cout << "no light source!!\n";
         return;
     }
-    unsigned int lightPosLoc = glGetUniformLocation(m_shader, "u_LightPos");
-    unsigned int lightColourLoc = glGetUniformLocation(m_shader, "u_LightColour");
-    unsigned int brightnessLoc = glGetUniformLocation(m_shader, "u_LightBrightness");
-    unsigned int ambientLoc = glGetUniformLocation(m_shader, "u_AmbientStrength");
+    const unsigned int lightPosLoc = glGetUniformLocation(m_shader, "u_LightPos");
+    const unsigned int lightColourLoc = glGetUniformLocation(m_shader, "u_LightColour");
+    const unsigned int brightnessLoc = glGetUniformLocation(m_shader, "u_LightBrightness");
+    const unsigned int ambientLoc = glGetUniformLocation(m_shader, "u_AmbientStrength");
+
     glUniform3fv(lightPosLoc, 1, &m_lightSources[0].getPosition()[0]);
     glUniform3fv(lightColourLoc, 1, &m_lightSources[0].getColour()[0]);
-    glUniform1f(ambientLoc, m_lightSources[0].getAmbientStrength());
     glUniform1f(brightnessLoc, m_lightSources[0].getBrightness());
+    glUniform1f(ambientLoc, m_lightSources[0].getAmbientStrength());
 }
 
 void Scene::render(){
