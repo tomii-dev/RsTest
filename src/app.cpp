@@ -14,32 +14,37 @@
 #include "utils.hpp"
 
 App* App::s_instance = nullptr;
-decltype(rs_logToD3)* g_log;
 
 App::App() : m_window		(nullptr),
 			 m_currentScene	(nullptr),
 			 m_rsLib		(nullptr),
 			 m_header		(nullptr),
-			 m_windowWidth	(1920.f),
-			 m_windowHeight	(1080.f)
+			 m_windowWidth	(800.f),
+			 m_windowHeight	(600.f)
 {
 	s_instance = this;
-    loadRenderStream();
 }
 
-void App::loadRenderStream() {
+int App::loadRenderStream()
+{
     HKEY key;
-    RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\d3 Technologies\\d3 Production Suite"), 0, KEY_READ, &key);
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\d3 Technologies\\d3 Production Suite", 0, KEY_READ, &key)) 
+        return utils::error("failed to open d3 registry key! do you have the disguise software installed?");
     TCHAR buf[512];
     DWORD bufSize = sizeof(buf);
-    RegQueryValueEx(key, TEXT("exe path"), 0, nullptr, reinterpret_cast<LPBYTE>(buf), &bufSize);
-    PathRemoveFileSpec(buf);
-    _tcscat_s(buf, bufSize, TEXT("\\d3renderstream.dll"));
+    if (RegQueryValueEx(key, L"exe path", 0, nullptr, reinterpret_cast<LPBYTE>(buf), &bufSize))
+        return utils::error("failed to query value of 'exe path' :(");
+    if (!PathRemoveFileSpec(buf))
+        return utils::error("failed to remove file spec from path :(");
+    _tcscat_s(buf, bufSize, L"\\d3renderstream.dll");
     m_rsLib = LoadLibraryEx(buf, NULL,
         LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR    | 
         LOAD_LIBRARY_SEARCH_APPLICATION_DIR | 
         LOAD_LIBRARY_SEARCH_SYSTEM32        | 
         LOAD_LIBRARY_SEARCH_USER_DIRS);
+
+    if (m_rsLib == nullptr)
+        return utils::error("failed to load renderstream dll!");
 
 #define LOAD_FN(FUNC_NAME) \
     decltype(FUNC_NAME)* FUNC_NAME = reinterpret_cast<decltype(FUNC_NAME)>(GetProcAddress(m_rsLib, #FUNC_NAME)); \
@@ -55,7 +60,8 @@ void App::loadRenderStream() {
 	LOAD_FN(rs_awaitFrameData);
 	LOAD_FN(rs_shutdown);
 
-	rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR);
+    if (rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR))
+        return utils::error("failed to init RenderStream!");
 
 	utils::rsInitialiseGpuOpenGl	= rs_initialiseGpGpuWithOpenGlContexts;
 	utils::logToD3					= rs_logToD3;
@@ -64,9 +70,12 @@ void App::loadRenderStream() {
 	utils::rsGetFrameCamera			= rs_getFrameCamera;
 	utils::rsAwaitFrameData			= rs_awaitFrameData;
 	utils::rsShutdown				= rs_shutdown;
+
+    return 0;
 }
 
-int App::handleStreams() {
+int App::handleStreams() 
+{
 	RS_ERROR err = utils::rsAwaitFrameData(5000, &m_frame);
 	switch (err) {
 	case RS_ERROR_STREAMS_CHANGED:
@@ -88,7 +97,8 @@ int App::handleStreams() {
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
-				glTexImage2D(GL_TEXTURE_2D, 0, utils::glInternalFormat(desc.format), desc.width, desc.height, 0, utils::glFormat(desc.format), utils::glType(desc.format), nullptr);
+				glTexImage2D(GL_TEXTURE_2D, 0, utils::glInternalFormat(desc.format), desc.width, desc.height, 
+                                            0, utils::glFormat(desc.format), utils::glType(desc.format), nullptr);
 
 				glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -108,19 +118,20 @@ int App::handleStreams() {
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			}
 		}
-		catch (const std::exception& e) {
-			utils::logToD3(e.what());
-			return 1;
-		}
+        catch (const std::exception& e) {
+            return utils::error(e.what());
+        }
 	case RS_ERROR_TIMEOUT:
 	case RS_ERROR_SUCCESS: return 0;
 	default:
-		utils::logToD3("rs_awaitFrameData returned " + err);
-		return 1;
+        std::string msg = "rs_awaitFrameData returned " + err;
+        utils::logToD3(msg.c_str());
+        return 1;
 	}
 }
 
-int App::sendFrames() {
+int App::sendFrames() 
+{
 	const size_t nStreams = m_header ? m_header->nStreams : 0;
 	for (size_t i = 0; i < nStreams; ++i) {
 		const StreamDescription& desc = m_header->streams[i];
@@ -130,6 +141,9 @@ int App::sendFrames() {
 			const RenderTarget& target = m_targets.at(desc.handle);
 			glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            setWindowWidth(desc.width);
+            setWindowHeight(desc.height);
+            glViewport(0, 0, desc.width, desc.height);
 			m_currentScene->update();
 			m_currentScene->render();
 			glFinish();
@@ -143,52 +157,52 @@ int App::sendFrames() {
 	return 0;
 }
 
-App* App::getInstance() {
+App* App::getInstance() 
+{
 	return s_instance;
 }
 
-Scene* App::getScene() {
-	return m_currentScene;
-}
+int App::run() 
+{
+    if (loadRenderStream())
+        return 1;
 
-void App::setScene(Scene* scene) {
-	m_currentScene = scene;
-}
+    // initialise glfw lib
+    if (!glfwInit())
+        return utils::error("failed to initialise GLFW!");
 
-int App::run() {
-    
-	if (!glfwInit())
-		return -1;
-
+    // create window and return if failed
 	m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "RsTest", NULL, NULL);
-	if (!m_window) {
-		glfwTerminate();
-		return -1;
-	}
+    if (!m_window)
+        utils::error("failed to create window :(");
 
+    // hide window and set it to be current opengl context
 	glfwHideWindow(m_window);
 	glfwMakeContextCurrent(m_window);
 
+    // initialise glew library, used to get openGL functions
 	glewExperimental = GL_TRUE;
 	glewInit();
 
+    // enable gl depth testing and set to draw when the incoming depth value is less than the stored depth value
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	HGLRC wglContext = glfwGetWGLContext(m_window);
 	HDC dc = GetDC(glfwGetWin32Window(m_window));
 
-	Scene scene(this);
-	setScene(&scene);
+    m_currentScene = new Scene();
 
-	LightSource* light = scene.addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
-	Object* sphere = scene.addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1, "LINUS.jpg" });
+	LightSource* light = m_currentScene->addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
+	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1, "LINUS.jpg" });
+    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(0, 0, -5), 1.f, glm::vec3(0, .7f, 1) });
 
-	utils::rsInitialiseGpuOpenGl(wglContext, dc);
+	if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
+        utils::error("failed to initialise RenderStream GPU interop");
 
-	while (true) {
-
-		sphere->setPosition(sphere->getPosition() + glm::vec3(0, 0, -.01f));
+	while (true) 
+    {
+        sphere->rotate(1.f, glm::vec3(0, 0, 1));
 
 		if(handleStreams())
 			break;
@@ -202,16 +216,14 @@ int App::run() {
 	return utils::rsShutdown();
 }
 
-float App::getWindowWidth() {
+float App::getWindowWidth() 
+{
 	return m_windowWidth;
 }
 
-float App::getWindowHeight() {
+float App::getWindowHeight() 
+{
 	return m_windowHeight;
-}
-
-GLFWwindow* App::getWindow() {
-	return m_window;
 }
 
 void App::setWindowWidth(float width) {

@@ -5,6 +5,10 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <windows.h>
+#include <locale>
+#include <codecvt>
+#include <sstream>
 
 #include "app.hpp"
 
@@ -17,6 +21,14 @@ namespace utils {
 	decltype(rs_awaitFrameData)* rsAwaitFrameData;
 	decltype(rs_logToD3)* logToD3;
 	decltype(rs_shutdown)* rsShutdown;
+
+    int error(const std::string& msg)
+    {
+        if (logToD3) logToD3(msg.c_str());
+        const std::wstring wStr = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(msg);
+        MessageBox(NULL, wStr.c_str(), L"RsTest Error :(", MB_OK);
+        return 1;
+    }
 
 	unsigned int createShader(const GLchar* vsSrc[], const GLchar* fsSrc[])
 	{
@@ -46,13 +58,13 @@ namespace utils {
 		return program;
 	}
 	 
-	void checkGLError(const char* add)
-	{
+	void checkGLError(const std::string& add)
+    {
 		GLenum err;
 		while (err = glGetError()) {
-			char* str = (char*)gluErrorString(err);
-			strcat_s(str, sizeof(char)*100, add);
-			logToD3(str);
+            std::stringstream ss;
+            ss << gluErrorString(err) << " " << add;
+			logToD3(ss.str().c_str());
 		}
 	}
 
