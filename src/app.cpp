@@ -53,24 +53,24 @@ int App::loadRenderStream()
         std::wcerr << "Failed to get function " #FUNC_NAME " from DLL" << std::endl; \
 
     LOAD_FN(rs_initialise);
-	LOAD_FN(rs_initialiseGpGpuWithOpenGlContexts);
-	LOAD_FN(rs_logToD3);
-	LOAD_FN(rs_getStreams);
-	LOAD_FN(rs_sendFrame);
-	LOAD_FN(rs_getFrameCamera);
-	LOAD_FN(rs_awaitFrameData);
-	LOAD_FN(rs_shutdown);
+    LOAD_FN(rs_initialiseGpGpuWithOpenGlContexts);
+    LOAD_FN(rs_logToD3);
+    LOAD_FN(rs_getStreams);
+    LOAD_FN(rs_sendFrame);
+    LOAD_FN(rs_getFrameCamera);
+    LOAD_FN(rs_awaitFrameData);
+    LOAD_FN(rs_shutdown);
 
     if (rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR))
         return utils::error("failed to init RenderStream!");
 
-	utils::rsInitialiseGpuOpenGl	= rs_initialiseGpGpuWithOpenGlContexts;
-	utils::logToD3					= rs_logToD3;
-	utils::rsGetStreams				= rs_getStreams;
-	utils::rsSendFrame				= rs_sendFrame;
-	utils::rsGetFrameCamera			= rs_getFrameCamera;
-	utils::rsAwaitFrameData			= rs_awaitFrameData;
-	utils::rsShutdown				= rs_shutdown;
+    utils::rsInitialiseGpuOpenGl	= rs_initialiseGpGpuWithOpenGlContexts;
+    utils::logToD3					= rs_logToD3;
+    utils::rsGetStreams				= rs_getStreams;
+    utils::rsSendFrame				= rs_sendFrame;
+    utils::rsGetFrameCamera			= rs_getFrameCamera;
+    utils::rsAwaitFrameData			= rs_awaitFrameData;
+    utils::rsShutdown				= rs_shutdown;
 
     return 0;
 }
@@ -133,30 +133,30 @@ int App::handleStreams()
 
 int App::sendFrames() 
 {
-	const size_t nStreams = m_header ? m_header->nStreams : 0;
-	for (size_t i = 0; i < nStreams; ++i) {
-		const StreamDescription& desc = m_header->streams[i];
-		CameraResponseData res;
-		res.tTracked = m_frame.tTracked;
-		if (utils::rsGetFrameCamera(desc.handle, &res.camera) == RS_ERROR_SUCCESS) {
-			const RenderTarget& target = m_targets.at(desc.handle);
-			glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			Camera* cam = m_currentScene->getCurrentCamera();
-			cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
-			cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
+    const size_t nStreams = m_header ? m_header->nStreams : 0;
+    for (size_t i = 0; i < nStreams; ++i) {
+        const StreamDescription& desc = m_header->streams[i];
+        CameraResponseData res;
+        res.tTracked = m_frame.tTracked;
+        if (utils::rsGetFrameCamera(desc.handle, &res.camera) == RS_ERROR_SUCCESS) {
+            const RenderTarget& target = m_targets.at(desc.handle);
             setWindowWidth(desc.width);
             setWindowHeight(desc.height);
             glViewport(0, 0, desc.width, desc.height);
-			m_currentScene->update();
-			m_currentScene->render();
-			SenderFrameTypeData data;
-			data.gl.texture = target.texture;
-			if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
-				return 1;
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
-	}
+            glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            Camera* cam = m_currentScene->getCurrentCamera();
+            cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
+            cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
+            m_currentScene->update();
+            m_currentScene->render();
+		    SenderFrameTypeData data;
+		    data.gl.texture = target.texture;
+		    if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
+			    return 1;
+		    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	    }
+    }
 	return 0;
 }
 
