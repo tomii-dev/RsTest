@@ -20,14 +20,7 @@ public:
 	glm::vec3 getFront();
 	glm::vec3 getUp();
 	void setPosition(glm::vec3 pos);
-	void move(glm::vec3 dir);
 	void setRotation(float pitch, float yaw, float roll);
-	void moveForward(float amount=1.f);
-	void moveBackward(float amount=1.f);
-	void moveLeft(float amount=1.f);
-	void moveRight(float amount=1.f);
-	void moveUp(float amount=1.f);
-	void moveDown(float amount=1.f);
 	float getFov();
 	void setFov(float fov);
 };

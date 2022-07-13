@@ -8,6 +8,7 @@
 #include <tchar.h>
 #include <GLFW/glfw3native.h>
 #include <d3/d3renderstream.h>
+#include <glm/glm.hpp>
 
 #include "scene.hpp"
 #include "object.hpp"
@@ -19,8 +20,8 @@ App::App() : m_window		(nullptr),
 			 m_currentScene	(nullptr),
 			 m_rsLib		(nullptr),
 			 m_header		(nullptr),
-			 m_windowWidth	(800.f),
-			 m_windowHeight	(600.f)
+			 m_windowWidth	(1920.f),
+			 m_windowHeight	(1080.f)
 {
 	s_instance = this;
 }
@@ -141,12 +142,14 @@ int App::sendFrames()
 			const RenderTarget& target = m_targets.at(desc.handle);
 			glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			Camera* cam = m_currentScene->getCurrentCamera();
+			cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
+			cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
             setWindowWidth(desc.width);
             setWindowHeight(desc.height);
             glViewport(0, 0, desc.width, desc.height);
 			m_currentScene->update();
 			m_currentScene->render();
-			glFinish();
 			SenderFrameTypeData data;
 			data.gl.texture = target.texture;
 			if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
@@ -194,16 +197,13 @@ int App::run()
     m_currentScene = new Scene();
 
 	LightSource* light = m_currentScene->addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
-	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1, "LINUS.jpg" });
-    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(0, 0, -5), 1.f, glm::vec3(0, .7f, 1) });
+	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1});
 
 	if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
         utils::error("failed to initialise RenderStream GPU interop");
 
-	while (true) 
-    {
-        sphere->rotate(1.f, glm::vec3(0, 0, 1));
-
+	while(true)
+	{
 		if(handleStreams())
 			break;
 
