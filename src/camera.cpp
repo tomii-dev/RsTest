@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -29,9 +30,8 @@ void Camera::setPosition(glm::vec3 pos)
 }
 
 void Camera::setRotation(float pitch, float yaw, float roll) {
-	glm::vec3 rot(glm::vec3(pitch, yaw, roll) - m_rot);
-	m_front = glm::rotate(m_front, glm::radians(1.f), rot);
-	m_rot += rot;
+	const glm::mat4 rotMat(glm::eulerAngleXYZ(glm::radians(pitch), glm::radians(yaw), glm::radians(roll)));
+	m_front = glm::vec4(1, 0, 0, 0) * rotMat;
 	m_scene->updateMatrices();
 }
 
