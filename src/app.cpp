@@ -150,14 +150,14 @@ int App::sendFrames()
             cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
             m_currentScene->update();
             m_currentScene->render();
-		    SenderFrameTypeData data;
-		    data.gl.texture = target.texture;
-		    if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
+            SenderFrameTypeData data;
+            data.gl.texture = target.texture;
+            if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
 			    return 1;
-		    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	    }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
     }
-	return 0;
+    return 0;
 }
 
 App* App::getInstance() 
