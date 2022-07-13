@@ -17,11 +17,11 @@
 App* App::s_instance = nullptr;
 
 App::App() : m_window		(nullptr),
-			 m_currentScene	(nullptr),
-			 m_rsLib		(nullptr),
-			 m_header		(nullptr),
-			 m_windowWidth	(1920.f),
-			 m_windowHeight	(1080.f)
+             m_currentScene	(nullptr),
+             m_rsLib		(nullptr),
+             m_header		(nullptr),
+             m_windowWidth	(1920.f),
+             m_windowHeight	(1080.f)
 {
 	s_instance = this;
 }
