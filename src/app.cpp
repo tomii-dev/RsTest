@@ -21,7 +21,8 @@ App::App() : m_window		(nullptr),
              m_rsLib		(nullptr),
              m_header		(nullptr),
              m_windowWidth	(1920.f),
-             m_windowHeight	(1080.f)
+             m_windowHeight	(1080.f),
+             m_frame        ()
 {
 	s_instance = this;
 }
@@ -125,9 +126,7 @@ int App::handleStreams()
 	case RS_ERROR_TIMEOUT:
 	case RS_ERROR_SUCCESS: return 0;
 	default:
-        std::string msg = "rs_awaitFrameData returned " + err;
-        utils::logToD3(msg.c_str());
-        return 1;
+        return utils::error("rs_awaitFrameData returned " + utils::rsErrorStr(err));
 	}
 }
 
@@ -147,6 +146,7 @@ int App::sendFrames()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             Camera* cam = m_currentScene->getCurrentCamera();
             cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
+            utils::logToD3(std::to_string(res.camera.rx).c_str());
             cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
             m_currentScene->update();
             m_currentScene->render();
@@ -198,6 +198,7 @@ int App::run()
 
 	LightSource* light = m_currentScene->addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
 	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1});
+    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(-6.f, 0, 0), 1.f, glm::vec3(0, .7, 1) });
 
 	if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
         utils::error("failed to initialise RenderStream GPU interop");
