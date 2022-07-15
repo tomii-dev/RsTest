@@ -22,6 +22,26 @@ namespace utils {
 	decltype(rs_logToD3)* logToD3;
 	decltype(rs_shutdown)* rsShutdown;
 
+    const std::string rsErrorStrs[] = {
+           "RS_ERROR_SUCCESS",
+           "RS_NOT_INITIALISED",
+           "RS_ERROR_ALREADYINITIALISED",
+           "RS_ERROR_INVALIDHANDLE",
+           "RS_MAXSENDERSREACHED",
+           "RS_ERROR_BADSTREAMTYPE",
+           "RS_ERROR_NOTFOUND",
+           "RS_ERROR_INCORRECTSCHEMA",
+           "RS_ERROR_INVALID_PARAMETERS",
+           "RS_ERROR_BUFFER_OVERFLOW",
+           "RS_ERROR_TIMEOUT",
+           "RS_ERROR_STREAMS_CHANGED",
+           "RS_ERROR_INCOMPATIBLE_VERSION",
+           "RS_ERROR_FAILED_TO_GET_DXDEVICE_FROM_RESOURCE",
+           "RS_ERROR_FAILED_TO_INITIALISE_GPGPU",
+           "RS_ERROR_QUIT",
+           "RS_ERROR_UNSPECIFIED"
+    };
+
     int error(const std::string& msg)
     {
         if (logToD3) logToD3(msg.c_str());
@@ -68,7 +88,8 @@ namespace utils {
 		}
 	}
 
-	const StreamDescriptions* getStreams(std::vector<uint8_t>& desc) {		
+	const StreamDescriptions* getStreams(std::vector<uint8_t>& desc) 
+    {		
 		uint32_t bytes;
 		rsGetStreams(nullptr, &bytes);
 
@@ -90,7 +111,8 @@ namespace utils {
 		return reinterpret_cast<const StreamDescriptions*>(&desc[0]);
 	}
 
-	GLint glInternalFormat(RSPixelFormat format) {
+	GLint glInternalFormat(RSPixelFormat format) 
+    {
 		switch (format) {
 		case RS_FMT_BGRA8:
 		case RS_FMT_BGRX8:
@@ -107,7 +129,8 @@ namespace utils {
 		}
 	}
 
-	GLint glFormat(RSPixelFormat format) {
+	GLint glFormat(RSPixelFormat format) 
+    {
 		switch (format) {
 		case RS_FMT_BGRA8:
 		case RS_FMT_BGRX8:
@@ -122,7 +145,8 @@ namespace utils {
 		}
 	}
 
-	GLenum glType(RSPixelFormat format) {
+	GLenum glType(RSPixelFormat format) 
+    {
 		switch (format)
 		{
 		case RS_FMT_BGRA8:
@@ -139,4 +163,9 @@ namespace utils {
 			throw std::runtime_error("Unhandled RS pixel format");
 		}
 	}
+
+    const std::string& rsErrorStr(RS_ERROR err) 
+    {
+        return rsErrorStrs[err];
+    }
 }

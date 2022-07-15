@@ -17,6 +17,8 @@
 
 #define PI 3.1415926535897932384626433832795028841
 
+#define STR( name ) # name
+
 struct RenderTarget {
 	GLuint texture;
 	GLuint frameBuf;
@@ -51,4 +53,6 @@ namespace utils {
 	GLint glInternalFormat(RSPixelFormat format);
 	GLint glFormat(RSPixelFormat format);
 	GLenum glType(RSPixelFormat format);
+
+    const std::string& rsErrorStr(RS_ERROR);
 }
