@@ -11,3 +11,6 @@ include/GL/
 include/GLFW/
 include/glm/
 include/stb/
+**.ini
+src/vendor/
+include/imgui/
