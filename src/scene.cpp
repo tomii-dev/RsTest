@@ -10,7 +10,8 @@
 #include "utils.hpp"
 #include "app.hpp"
 
-Scene::Scene() : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) )
+Scene::Scene() : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) ),
+                 m_rsScene      (new RsScene())
 {
     const GLchar* vsSource[] = {R"src(#version 120
     attribute vec4 a_Position;
@@ -67,6 +68,14 @@ Scene::Scene() : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) )
 	glLinkProgram(m_shader);
 	glUseProgram(m_shader);
     utils::checkGLError(" creating shader program");
+
+    RsParam param1;
+    param1.addField("test param", "test param", "test param", 0);
+
+    m_rsScene->name = "test";
+    m_rsScene->addParam(param1);
+
+    App::getSchema().addScene(*this);
 
     updateMatrices();
 }
@@ -150,4 +159,9 @@ Camera* Scene::addCamera(glm::vec3 pos, float fov) {
 
 Camera* Scene::getCurrentCamera() {
     return m_currentCamera;
+}
+
+RsScene* Scene::getRsScene()
+{
+    return m_rsScene;
 }

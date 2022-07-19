@@ -21,6 +21,8 @@ namespace utils {
 	decltype(rs_awaitFrameData)* rsAwaitFrameData;
 	decltype(rs_logToD3)* logToD3;
 	decltype(rs_shutdown)* rsShutdown;
+    decltype(rs_setSchema)* rsSetSchema;
+    decltype(rs_getFrameParameters)* rsGetFrameParams;
 
     const std::string rsErrorStrs[] = {
            "RS_ERROR_SUCCESS",
@@ -168,4 +170,66 @@ namespace utils {
     {
         return rsErrorStrs[err];
     }
+}
+
+RsSchema::RsSchema() 
+{
+    channels.nChannels  = 0;
+    scenes.nScenes      = 0;
+    channels.channels   = nullptr;
+    scenes.scenes       = nullptr;
+}
+
+void RsSchema::addScene(Scene& scene)
+{
+    m_scenes.push_back(*scene.getRsScene());
+    scenes.scenes = &m_scenes[0];
+    ++scenes.nScenes;
+}
+
+RsScene::RsScene()
+{
+    parameters = nullptr;
+}
+
+void RsScene::addParam(const RemoteParameter& param)
+{
+    m_params.push_back(param);
+    parameters = &m_params[0];
+    ++nParameters;
+}
+
+void RsParam::addField(const std::string& key, const std::string& display,
+    const std::string& group, float defaultVal, float min, float max, float step,
+    const std::vector<std::string>& opt, bool allowSequencing)
+{
+    if (!opt.empty())
+    {
+        min = 0;
+        max = float(opt.size() - 1);
+        step = 1;
+    }
+
+    this->group                     = _strdup(group.c_str());
+    this->displayName               = _strdup(display.c_str());
+    this->key                       = _strdup(key.c_str());
+    this->type                      = RS_PARAMETER_NUMBER;
+    defaults.number.defaultValue    = defaultVal;
+    defaults.number.min             = min;
+    defaults.number.max             = max;
+    defaults.number.step            = step;
+    nOptions                        = uint32_t(opt.size());
+    options                         = static_cast<const char**>(malloc(nOptions * sizeof(const char*)));
+
+    for (size_t j = 0; j < opt.size(); ++j)
+    {
+        options[j] = _strdup(opt[j].c_str());
+    }
+
+    dmxOffset                       = -1; // Auto
+    dmxType                         = RS_DMX_16_BE;
+    flags                           = REMOTEPARAMETER_NO_FLAGS;
+
+    if (!allowSequencing)
+        flags |= REMOTEPARAMETER_NO_SEQUENCE;
 }

@@ -31,7 +31,7 @@ void Camera::setPosition(glm::vec3 pos)
 
 void Camera::setRotation(float pitch, float yaw, float roll) {
 	const glm::mat4 rotMat(glm::eulerAngleXYZ(glm::radians(pitch), glm::radians(yaw), glm::radians(roll)));
-	m_front = glm::vec4(1, 0, 0, 0) * rotMat;
+	m_front = glm::vec4(1, 0, 0, 1) * rotMat;
 	m_scene->updateMatrices();
 }
 

@@ -9,10 +9,17 @@
 #include <GLFW/glfw3native.h>
 #include <d3/d3renderstream.h>
 #include <glm/glm.hpp>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+#include <fstream>
+#include <cmath>
 
 #include "scene.hpp"
 #include "object.hpp"
 #include "utils.hpp"
+
+#pragma warning(disable:4996)
 
 App* App::s_instance = nullptr;
 
@@ -22,7 +29,8 @@ App::App() : m_window		(nullptr),
              m_header		(nullptr),
              m_windowWidth	(1920.f),
              m_windowHeight	(1080.f),
-             m_frame        ()
+             m_frame        (),
+             m_schema       ()
 {
 	s_instance = this;
 }
@@ -61,6 +69,8 @@ int App::loadRenderStream()
     LOAD_FN(rs_getFrameCamera);
     LOAD_FN(rs_awaitFrameData);
     LOAD_FN(rs_shutdown);
+    LOAD_FN(rs_setSchema);
+    LOAD_FN(rs_getFrameParameters);
 
     if (rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR))
         return utils::error("failed to init RenderStream!");
@@ -72,6 +82,8 @@ int App::loadRenderStream()
     utils::rsGetFrameCamera			= rs_getFrameCamera;
     utils::rsAwaitFrameData			= rs_awaitFrameData;
     utils::rsShutdown				= rs_shutdown;
+    utils::rsSetSchema              = rs_setSchema;
+    utils::rsGetFrameParams         = rs_getFrameParameters;
 
     return 0;
 }
@@ -125,6 +137,7 @@ int App::handleStreams()
         }
 	case RS_ERROR_TIMEOUT:
 	case RS_ERROR_SUCCESS: return 0;
+    case RS_ERROR_QUIT: return 0;
 	default:
         return utils::error("rs_awaitFrameData returned " + utils::rsErrorStr(err));
 	}
@@ -144,9 +157,13 @@ int App::sendFrames()
             glViewport(0, 0, desc.width, desc.height);
             glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            const RemoteParameters& scene = m_schema.scenes.scenes[m_frame.scene];
+            std::vector<float> params(scene.nParameters);
+            if (utils::rsGetFrameParams(scene.hash, params.data(), params.size() * sizeof(float)))
+                return utils::error("failed to get frame params");
+            m_params.sphereX = params[0];
             Camera* cam = m_currentScene->getCurrentCamera();
             cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
-            utils::logToD3(std::to_string(res.camera.rx).c_str());
             cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
             m_currentScene->update();
             m_currentScene->render();
@@ -160,9 +177,68 @@ int App::sendFrames()
     return 0;
 }
 
+void App::measureFps()
+{
+    double currentTime = glfwGetTime();
+    m_frameInfo.frameCount++;
+    if (currentTime - m_frameInfo.previousTime >= 1.0)
+    {
+        m_metrics.fps = m_frameInfo.frameCount;
+
+        m_frameInfo.frameCount = 0;
+        m_frameInfo.previousTime = currentTime;
+    }
+}
+
+void App::renderUi()
+{
+    // switch context to window for ui rendering
+    glfwMakeContextCurrent(m_uiWindow);
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // start new imgui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // each imgui window needs to take up half of os window
+    // on y axis
+    const double winX = ImGui::GetIO().DisplaySize.x;
+    const double winHalfY = ImGui::GetIO().DisplaySize.y / 2;
+    ImGui::SetNextWindowSize(ImVec2(winX, winHalfY));
+    ImGui::SetNextWindowPos(ImVec2());
+
+    // we don't want the imgui windows to be resized or moved
+    const int flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    ImGui::Begin("Metrics", 0, flags);
+    ImGui::LabelText(std::to_string(m_metrics.fps).c_str(), "FPS");
+    ImGui::End();
+    ImGui::SetNextWindowSize(ImVec2(winX, winHalfY));
+    ImGui::SetNextWindowPos(ImVec2(0, winHalfY));
+    ImGui::Begin("Controls", 0, flags);
+    ImGui::Combo("Colour Space", (int*) &m_config.colourSpace, colourSpaces, IM_ARRAYSIZE(colourSpaces));
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwSwapBuffers(m_uiWindow);
+}
+
 App* App::getInstance() 
 {
 	return s_instance;
+}
+
+RsSchema& App::getSchema()
+{
+    return s_instance->m_schema;
+}
+
+const Params& App::getParams()
+{
+    return s_instance->m_params;
 }
 
 int App::run() 
@@ -179,9 +255,27 @@ int App::run()
     if (!m_window)
         utils::error("failed to create window :(");
 
+    // create window for metrics and controls
+    m_uiWindow = glfwCreateWindow(300, 200, "RsTest", NULL, NULL);
+    if (!m_uiWindow)
+        utils::error("failed to create ui window :(");
+    glfwSetWindowSizeLimits(m_uiWindow, 300, 200, 600, 400);
+    GLFWimage img;
+    img.pixels = stbi_load("C:/Program Files/RsTest/img/icon.png", &img.width, &img.height, 0, 4);
+    glfwSetWindowIcon(m_uiWindow, 1, &img);
+    stbi_image_free(img.pixels);
+
     // hide window and set it to be current opengl context
 	glfwHideWindow(m_window);
 	glfwMakeContextCurrent(m_window);
+
+    // set up imgui for metrics window
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(m_uiWindow, true);
+    ImGui_ImplOpenGL3_Init("#version 120");
+    ImGui::StyleColorsDark();
+    ImGui::SetNextWindowSize(ImVec2(300, 200));
 
     // initialise glew library, used to get openGL functions
 	glewExperimental = GL_TRUE;
@@ -196,20 +290,37 @@ int App::run()
 
     m_currentScene = new Scene();
 
-	LightSource* light = m_currentScene->addLightSource(glm::vec3(0, -5.f, 0), 1.f, .4f, VEC1);
-	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, 1.f, VEC1});
-    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(-6.f, 0, 0), 1.f, glm::vec3(0, .7, 1) });
+	LightSource* light = m_currentScene->addLightSource(glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1);
+	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, .5f, VEC1});
+    m_currentScene->addObject(ObjectType::Cube, ObjectArgs{ glm::vec3(0, 0, -3), 1.f, glm::vec3(0, .7, 1) });
+    m_currentScene->addObject(ObjectType::Cube, ObjectArgs{ glm::vec3(0, 0, 4), .5f, glm::vec3(0, 1, 1)});
+    m_currentScene->addObject(ObjectType::Cube, ObjectArgs{ glm::vec3(0, -2, .7), .5f, glm::vec3(1, .41, .7)});
+    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(3, 2, 1), .5f, glm::vec3(.78, .27, .96)});
+    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(-2, -2, -1), .5f, glm::vec3(.78, .27, .96)});
 
 	if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
         utils::error("failed to initialise RenderStream GPU interop");
 
+    if (utils::rsSetSchema(&m_schema))
+        return utils::error("failed to set schema!");
+   
+    m_frameInfo = FrameInfo(glfwGetTime());
+
 	while(true)
 	{
+        glfwMakeContextCurrent(m_window);
+
+        measureFps();
+
 		if(handleStreams())
 			break;
 
+        sphere->setPosition(glm::vec3(m_params.sphereX, 0, 0));
+
 		if (sendFrames())
 			break;
+
+        renderUi();
 
 		glfwPollEvents();
 	}

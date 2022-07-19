@@ -7,11 +7,12 @@
 #include <d3/d3renderstream.h>
 
 #include "camera.hpp"
+#include "utils.hpp"
 
 #define VEC0 glm::vec3(0,0,0)
 #define VEC1 glm::vec3(1,1,1)
 
-class App;
+class RsScene;
 class Object;
 class LightSource;
 
@@ -29,7 +30,7 @@ struct ObjectArgs {
     int sectorCount = 36;
 };
 
-class Scene{
+class Scene {
     Camera* m_currentCamera;
     unsigned int m_shader;
     glm::mat4 m_view;
@@ -37,6 +38,7 @@ class Scene{
     std::list<Object*> m_objects;
     std::vector<LightSource> m_lightSources;
     std::vector<Camera> m_cameras;
+    RsScene* m_rsScene;
 public:
     Scene();
     ~Scene();
@@ -48,4 +50,5 @@ public:
     LightSource* addLightSource(glm::vec3 position, float brightness=0.0f, float ambientStrength=0.0f, glm::vec3 colour=VEC0);
     Camera* addCamera(glm::vec3 pos = VEC0, float fov = 45.f);
     Camera* getCurrentCamera();
+    RsScene* getRsScene();
 };
