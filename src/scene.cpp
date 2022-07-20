@@ -10,7 +10,7 @@
 #include "utils.hpp"
 #include "app.hpp"
 
-Scene::Scene() : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) ),
+Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1))),
                  m_rsScene      (new RsScene())
 {
     const GLchar* vsSource[] = {R"src(#version 120
@@ -72,7 +72,7 @@ Scene::Scene() : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1)) ),
     RsParam param1;
     param1.addField("test param", "test param", "test param", 0);
 
-    m_rsScene->name = "test";
+    m_rsScene->name = name;
     m_rsScene->addParam(param1);
 
     App::getSchema().addScene(*this);
@@ -129,12 +129,15 @@ void Scene::render(){
 
 Object* Scene::addObject(ObjectType type, ObjectArgs args){
     Object* obj;
+    utils::logToD3("YASSSS");
     switch(type){
     case ObjectType::Cube:
         obj = new Cube(this, args.pos, args.size, args.colour, args.texPath);
+        utils::logToD3("cube");
         break;
     case ObjectType::Sphere:
         obj = new Sphere(this, args.pos, args.size, args.stackCount, args.sectorCount, args.colour, args.texPath);
+        utils::logToD3("sphere");
         break;
     }
     m_objects.push_back(obj);

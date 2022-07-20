@@ -40,7 +40,7 @@ class Scene {
     std::vector<Camera> m_cameras;
     RsScene* m_rsScene;
 public:
-    Scene();
+    Scene(const char* name);
     ~Scene();
     void updateMatrices();
     void update();

@@ -157,11 +157,17 @@ int App::sendFrames()
             glViewport(0, 0, desc.width, desc.height);
             glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            const RemoteParameters& scene = m_schema.scenes.scenes[m_frame.scene];
-            std::vector<float> params(scene.nParameters);
-            if (utils::rsGetFrameParams(scene.hash, params.data(), params.size() * sizeof(float)))
+            const RemoteParameters& rsScene = m_schema.scenes.scenes[m_frame.scene];
+            std::vector<float> params(rsScene.nParameters);
+            if (utils::rsGetFrameParams(rsScene.hash, params.data(), params.size() * sizeof(float)))
                 return utils::error("failed to get frame params");
-            m_params.sphereX = params[0];
+            m_currentScene = m_scenes[m_frame.scene];
+            if (m_updateQueue.objects.size())
+            {
+                for (const ObjectConfig& obj : m_updateQueue.objects)
+                    m_currentScene->addObject(obj.type, obj.args);
+                m_updateQueue.clear();
+            }
             Camera* cam = m_currentScene->getCurrentCamera();
             cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
             cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
@@ -218,6 +224,24 @@ void App::renderUi()
     ImGui::SetNextWindowPos(ImVec2(0, winHalfY));
     ImGui::Begin("Controls", 0, flags);
     ImGui::Combo("Colour Space", (int*) &m_config.colourSpace, colourSpaces, IM_ARRAYSIZE(colourSpaces));
+
+    if (ImGui::Button("Add object"))
+        m_uiState.addObjectWinOpen = true;
+
+    if (m_uiState.addObjectWinOpen)
+    {
+        ObjectConfig* obj = &m_uiState.currentObj;
+        ImGui::SetNextWindowSize(ImVec2(275, 100));
+        ImGui::Begin("Add object", 0, ImGuiWindowFlags_NoResize);
+        ImGui::Combo("Object type", reinterpret_cast<int*>(&obj->type), objectTypes, IM_ARRAYSIZE(objectTypes));
+        ImGui::InputFloat3("Position", &obj->args.pos[0]);
+        if (ImGui::Button("Add"))
+        {
+            m_uiState.addObjectWinOpen = false;
+            m_updateQueue.objects.push_back(*obj);
+        }
+        ImGui::End();
+    }
     ImGui::End();
 
     ImGui::Render();
@@ -288,15 +312,10 @@ int App::run()
 	HGLRC wglContext = glfwGetWGLContext(m_window);
 	HDC dc = GetDC(glfwGetWin32Window(m_window));
 
-    m_currentScene = new Scene();
-
+    m_scenes.push_back(new Scene("scene 1"));
+    m_scenes.push_back(new Scene("scene 2"));
+    m_currentScene = m_scenes[0];
 	LightSource* light = m_currentScene->addLightSource(glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1);
-	Object* sphere = m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ VEC0, .5f, VEC1});
-    m_currentScene->addObject(ObjectType::Cube, ObjectArgs{ glm::vec3(0, 0, -3), 1.f, glm::vec3(0, .7, 1) });
-    m_currentScene->addObject(ObjectType::Cube, ObjectArgs{ glm::vec3(0, 0, 4), .5f, glm::vec3(0, 1, 1)});
-    m_currentScene->addObject(ObjectType::Cube, ObjectArgs{ glm::vec3(0, -2, .7), .5f, glm::vec3(1, .41, .7)});
-    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(3, 2, 1), .5f, glm::vec3(.78, .27, .96)});
-    m_currentScene->addObject(ObjectType::Sphere, ObjectArgs{ glm::vec3(-2, -2, -1), .5f, glm::vec3(.78, .27, .96)});
 
 	if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
         utils::error("failed to initialise RenderStream GPU interop");
@@ -314,8 +333,6 @@ int App::run()
 
 		if(handleStreams())
 			break;
-
-        sphere->setPosition(glm::vec3(m_params.sphereX, 0, 0));
 
 		if (sendFrames())
 			break;

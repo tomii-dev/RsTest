@@ -34,7 +34,8 @@ enum ColourSpace
 
 typedef std::unordered_map<StreamHandle, RenderTarget> TargetMap;
 
-static const char* colourSpaces[] = { "RGB", "sRGB"};
+static const char* colourSpaces[] = { "RGB", "sRGB" };
+static const char* objectTypes[] = { "Cube", "Sphere" };
 
 class RsSchema : public Schema
 {

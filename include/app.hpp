@@ -15,6 +15,12 @@
 
 class Scene;
 
+struct ObjectConfig
+{
+    ObjectType type;
+    ObjectArgs args;
+};
+
 struct Params
 {
     float sphereX = 0;
@@ -39,6 +45,21 @@ struct Config
     ColourSpace colourSpace;
 };
 
+struct UiState
+{
+    bool addObjectWinOpen;
+    ObjectConfig currentObj;
+};
+
+struct UpdateQueue
+{
+    std::vector<ObjectConfig> objects;
+    void clear()
+    {
+        objects.clear();
+    }
+};
+
 class App {
 private:
 	GLFWwindow* m_window;
@@ -48,6 +69,7 @@ private:
     FrameInfo m_frameInfo;
 	float m_windowWidth;
 	float m_windowHeight;
+    std::vector<Scene*> m_scenes;
 	Scene* m_currentScene;
 	static App* s_instance;
 	HMODULE m_rsLib;
@@ -56,6 +78,8 @@ private:
     RsSchema m_schema;
     Params m_params;
 	const StreamDescriptions* m_header;
+    UiState m_uiState;
+    UpdateQueue m_updateQueue;
     std::vector<uint8_t> m_desc;
     int loadRenderStream();
 	int handleStreams();
