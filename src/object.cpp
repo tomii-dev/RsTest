@@ -3,6 +3,7 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 Object::Object(){}
 
@@ -31,6 +32,11 @@ float Object::getSize()
 void Object::setSize(float size) 
 {
     m_size = glm::vec3(size);
+}
+
+void Object::setRotation(float x, float y, float z)
+{
+    m_rotation = glm::eulerAngleXYZ(glm::radians(x), glm::radians(y), glm::radians(z));
 }
 
 void Object::update()

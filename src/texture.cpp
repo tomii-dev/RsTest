@@ -11,7 +11,7 @@ Texture::Texture(const std::string& path)
 	m_localBuffer	(nullptr) 
 {
 	stbi_set_flip_vertically_on_load(1);
-	m_localBuffer = stbi_load(path.c_str(), &m_width, &m_height, &m_bpp, 4);
+	m_localBuffer = stbi_load(("C:/Program Files/RsTest/tex/" + path).c_str(), &m_width, &m_height, &m_bpp, 4);
 
 	glGenTextures(1, &m_rendererId);
 	glBindTexture(GL_TEXTURE_2D, m_rendererId);

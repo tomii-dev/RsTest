@@ -37,15 +37,6 @@ typedef std::unordered_map<StreamHandle, RenderTarget> TargetMap;
 static const char* colourSpaces[] = { "RGB", "sRGB" };
 static const char* objectTypes[] = { "Cube", "Sphere" };
 
-class RsSchema : public Schema
-{
-    std::vector<RemoteParameters> m_scenes;
-public:
-    RsSchema();
-    // the scene reference param would be const but it got upset at me
-    void addScene(Scene& scene);
-};
-
 class RsScene : public RemoteParameters
 {
     std::vector<RemoteParameter> m_params;
@@ -54,10 +45,20 @@ public:
     void addParam(const RemoteParameter& param);
 };
 
+class RsSchema : public Schema
+{
+    std::vector<RemoteParameters> m_scenes;
+public:
+    RsSchema();
+    // the scene reference param would be const but it got upset at me
+    void addScene(RsScene& scene);
+    void reloadScene(RsScene& scene);
+};
+
 class RsParam : public RemoteParameter
 {
 public:
-    void addField(const std::string& key, const std::string& display,
+    RsParam(const std::string& key, const std::string& display,
         const std::string& group, float defaultVal, float min = 0, float max = 255,
         float step = 1, const std::vector<std::string>& opt = {}, bool allowSequencing = true);
 };
@@ -94,8 +95,4 @@ namespace utils {
 	GLenum glType(RSPixelFormat format);
 
     const std::string& rsErrorStr(RS_ERROR);
-
-    void addField(RemoteParameter& param, const std::string& key, const std::string& display,
-                  const std::string& group, float defaultVal, float min = 0, float max = 255, 
-                  float step = 1, const std::vector<std::string>& opt = {}, bool allowSequencing = true);
 }

@@ -10,6 +10,7 @@
 #include <codecvt>
 #include <sstream>
 
+#include "scene.hpp"
 #include "app.hpp"
 
 namespace utils {
@@ -180,16 +181,26 @@ RsSchema::RsSchema()
     scenes.scenes       = nullptr;
 }
 
-void RsSchema::addScene(Scene& scene)
+void RsSchema::addScene(RsScene& scene)
 {
-    m_scenes.push_back(*scene.getRsScene());
+    m_scenes.push_back(scene);
     scenes.scenes = &m_scenes[0];
     ++scenes.nScenes;
+}
+
+void RsSchema::reloadScene(RsScene& scene)
+{
+    for (RemoteParameters& s : m_scenes)
+        if (s.name == scene.name)
+            s = scene;
+    scenes.scenes = &m_scenes[0];
 }
 
 RsScene::RsScene()
 {
     parameters = nullptr;
+    nParameters = 0;
+    
 }
 
 void RsScene::addParam(const RemoteParameter& param)
@@ -199,7 +210,7 @@ void RsScene::addParam(const RemoteParameter& param)
     ++nParameters;
 }
 
-void RsParam::addField(const std::string& key, const std::string& display,
+RsParam::RsParam(const std::string& key, const std::string& display,
     const std::string& group, float defaultVal, float min, float max, float step,
     const std::vector<std::string>& opt, bool allowSequencing)
 {

@@ -2,7 +2,6 @@
 
 #include <glm/matrix.hpp>
 #include <vector>
-#include <list>
 #include <string>
 #include <d3/d3renderstream.h>
 
@@ -22,10 +21,11 @@ enum class ObjectType {
 };
 
 struct ObjectArgs {
+    std::string name;
     glm::vec3 pos = VEC0;
     float size = 1.0f;
     glm::vec3 colour = VEC1;
-    std::string texPath;
+    std::string texPath = "LINUS.jpg";
     int stackCount = 18;
     int sectorCount = 36;
 };
@@ -35,7 +35,7 @@ class Scene {
     unsigned int m_shader;
     glm::mat4 m_view;
     glm::mat4 m_projection;
-    std::list<Object*> m_objects;
+    std::vector<Object*> m_objects;
     std::vector<LightSource> m_lightSources;
     std::vector<Camera> m_cameras;
     RsScene* m_rsScene;
@@ -50,5 +50,6 @@ public:
     LightSource* addLightSource(glm::vec3 position, float brightness=0.0f, float ambientStrength=0.0f, glm::vec3 colour=VEC0);
     Camera* addCamera(glm::vec3 pos = VEC0, float fov = 45.f);
     Camera* getCurrentCamera();
-    RsScene* getRsScene();
+    const char* getName();
+    int getObjectCount();
 };

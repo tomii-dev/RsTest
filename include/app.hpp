@@ -21,9 +21,9 @@ struct ObjectConfig
     ObjectArgs args;
 };
 
-struct Params
+struct SceneConfig
 {
-    float sphereX = 0;
+    std::string name;
 };
 
 struct FrameInfo
@@ -48,15 +48,19 @@ struct Config
 struct UiState
 {
     bool addObjectWinOpen;
+    bool newSceneWinOpen;
     ObjectConfig currentObj;
+    SceneConfig currentScene;
 };
 
 struct UpdateQueue
 {
     std::vector<ObjectConfig> objects;
+    std::vector<SceneConfig> scenes;
     void clear()
     {
         objects.clear();
+        scenes.clear();
     }
 };
 
@@ -76,11 +80,12 @@ private:
 	TargetMap m_targets;
 	FrameData m_frame;
     RsSchema m_schema;
-    Params m_params;
 	const StreamDescriptions* m_header;
     UiState m_uiState;
     UpdateQueue m_updateQueue;
     std::vector<uint8_t> m_desc;
+    std::vector<float> m_params;
+    uint64_t m_hash;
     int loadRenderStream();
 	int handleStreams();
 	int sendFrames();
@@ -95,5 +100,7 @@ public:
 	void setWindowHeight(float height);
 	static App* getInstance();
     static RsSchema& getSchema();
-    static const Params& getParams();
+    static const std::vector<float>& getParams();
+    static Scene* getCurrentScene();
+    static void reloadSchema();
 };

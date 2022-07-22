@@ -25,4 +25,5 @@ public:
     void setPosition(glm::vec3 pos);
     float getSize();
     void setSize(float size);
+    void setRotation(float x, float y, float z);
 };

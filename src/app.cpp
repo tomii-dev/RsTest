@@ -12,6 +12,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_stdlib.h>
 #include <fstream>
 #include <cmath>
 
@@ -74,6 +75,9 @@ int App::loadRenderStream()
 
     if (rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR))
         return utils::error("failed to init RenderStream!");
+
+    if (rs_setSchema(&m_schema))
+        return utils::error("failed to set schema!");
 
     utils::rsInitialiseGpuOpenGl	= rs_initialiseGpGpuWithOpenGlContexts;
     utils::logToD3					= rs_logToD3;
@@ -157,17 +161,28 @@ int App::sendFrames()
             glViewport(0, 0, desc.width, desc.height);
             glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            const RemoteParameters& rsScene = m_schema.scenes.scenes[m_frame.scene];
-            std::vector<float> params(rsScene.nParameters);
-            if (utils::rsGetFrameParams(rsScene.hash, params.data(), params.size() * sizeof(float)))
-                return utils::error("failed to get frame params");
+
+            // add any new scenes created in ui
+            if (m_updateQueue.scenes.size()) {
+                for (const SceneConfig& scene : m_updateQueue.scenes)
+                    m_scenes.push_back(new Scene(scene.name.c_str()));
+                m_updateQueue.clear();
+            }
+
             m_currentScene = m_scenes[m_frame.scene];
+
             if (m_updateQueue.objects.size())
             {
                 for (const ObjectConfig& obj : m_updateQueue.objects)
                     m_currentScene->addObject(obj.type, obj.args);
                 m_updateQueue.clear();
             }
+
+            const RemoteParameters& rsScene = m_schema.scenes.scenes[m_frame.scene];
+            m_params.resize(rsScene.nParameters);
+            if (utils::rsGetFrameParams(rsScene.hash, m_params.data(), m_params.size() * sizeof(float)))
+                utils::logToD3("failed to get frame params");
+
             Camera* cam = m_currentScene->getCurrentCamera();
             cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
             cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
@@ -228,20 +243,42 @@ void App::renderUi()
     if (ImGui::Button("Add object"))
         m_uiState.addObjectWinOpen = true;
 
+    if (ImGui::Button("New scene"))
+        m_uiState.newSceneWinOpen = true;
+
+    // Window for adding object
     if (m_uiState.addObjectWinOpen)
     {
-        ObjectConfig* obj = &m_uiState.currentObj;
-        ImGui::SetNextWindowSize(ImVec2(275, 100));
+        ObjectConfig& obj = m_uiState.currentObj;
+        ImGui::SetNextWindowSize(ImVec2(275, 150));
         ImGui::Begin("Add object", 0, ImGuiWindowFlags_NoResize);
-        ImGui::Combo("Object type", reinterpret_cast<int*>(&obj->type), objectTypes, IM_ARRAYSIZE(objectTypes));
-        ImGui::InputFloat3("Position", &obj->args.pos[0]);
+        ImGui::InputText("Name", &obj.args.name);
+        ImGui::Combo("Type", reinterpret_cast<int*>(&obj.type), objectTypes, IM_ARRAYSIZE(objectTypes));
+        ImGui::InputFloat3("Position", &obj.args.pos[0]);
         if (ImGui::Button("Add"))
         {
             m_uiState.addObjectWinOpen = false;
-            m_updateQueue.objects.push_back(*obj);
+            m_updateQueue.objects.push_back(obj);
         }
         ImGui::End();
     }
+
+    // Window for adding scene
+    if (m_uiState.newSceneWinOpen)
+    {
+        SceneConfig& scene = m_uiState.currentScene;
+        ImGui::SetNextWindowSize(ImVec2(275, 150));
+        ImGui::Begin("New scene");
+        ImGui::InputText("Name", &scene.name);
+        if (ImGui::Button("Create"))
+        {
+            m_uiState.newSceneWinOpen = false;
+            m_updateQueue.scenes.push_back(scene);
+            scene = SceneConfig();
+        }
+        ImGui::End();
+    }
+
     ImGui::End();
 
     ImGui::Render();
@@ -260,9 +297,20 @@ RsSchema& App::getSchema()
     return s_instance->m_schema;
 }
 
-const Params& App::getParams()
+const std::vector<float>& App::getParams()
 {
     return s_instance->m_params;
+}
+
+Scene* App::getCurrentScene()
+{
+    return s_instance->m_currentScene;
+}
+
+void App::reloadSchema()
+{
+    if (utils::rsSetSchema(&s_instance->m_schema))
+        utils::error("failed to reload schema");
 }
 
 int App::run() 
@@ -312,16 +360,12 @@ int App::run()
 	HGLRC wglContext = glfwGetWGLContext(m_window);
 	HDC dc = GetDC(glfwGetWin32Window(m_window));
 
-    m_scenes.push_back(new Scene("scene 1"));
-    m_scenes.push_back(new Scene("scene 2"));
-    m_currentScene = m_scenes[0];
-	LightSource* light = m_currentScene->addLightSource(glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1);
-
 	if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
         utils::error("failed to initialise RenderStream GPU interop");
 
-    if (utils::rsSetSchema(&m_schema))
-        return utils::error("failed to set schema!");
+    m_scenes.push_back(new Scene("scene 1"));
+    m_currentScene = m_scenes[0];
+    LightSource* light = m_currentScene->addLightSource(glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1);
    
     m_frameInfo = FrameInfo(glfwGetTime());
 

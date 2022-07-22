@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <sstream>
 
 #include "object.hpp"
 #include "shape.hpp"
@@ -11,7 +12,7 @@
 #include "app.hpp"
 
 Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1))),
-                 m_rsScene      (new RsScene())
+                                 m_rsScene      (new RsScene())
 {
     const GLchar* vsSource[] = {R"src(#version 120
     attribute vec4 a_Position;
@@ -65,17 +66,13 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
 
     m_shader = utils::createShader(vsSource, fsSource);
 
-	glLinkProgram(m_shader);
 	glUseProgram(m_shader);
     utils::checkGLError(" creating shader program");
 
-    RsParam param1;
-    param1.addField("test param", "test param", "test param", 0);
-
     m_rsScene->name = name;
-    m_rsScene->addParam(param1);
 
-    App::getSchema().addScene(*this);
+    App::getSchema().addScene(*m_rsScene);
+    App::reloadSchema();
 
     updateMatrices();
 }
@@ -116,6 +113,15 @@ void Scene::update(){
     glUniform3fv(lightColourLoc, 1, &m_lightSources[0].getColour()[0]);
     glUniform1f(brightnessLoc, m_lightSources[0].getBrightness());
     glUniform1f(ambientLoc, m_lightSources[0].getAmbientStrength());
+
+    const std::vector<float>& params = App::getParams();
+    std::vector<Object*>::iterator it;
+    for (it = m_objects.begin(); it != m_objects.end(); ++it)
+    {
+        const int ind = !(it - m_objects.begin()) ? 0 : it - m_objects.begin() + 5;
+        (*it)->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
+        (*it)->setRotation(-params[ind + 5], params[ind + 3], -params[ind + 4]);
+    }
 }
 
 void Scene::render(){
@@ -129,18 +135,38 @@ void Scene::render(){
 
 Object* Scene::addObject(ObjectType type, ObjectArgs args){
     Object* obj;
-    utils::logToD3("YASSSS");
     switch(type){
     case ObjectType::Cube:
         obj = new Cube(this, args.pos, args.size, args.colour, args.texPath);
-        utils::logToD3("cube");
         break;
     case ObjectType::Sphere:
         obj = new Sphere(this, args.pos, args.size, args.stackCount, args.sectorCount, args.colour, args.texPath);
-        utils::logToD3("sphere");
         break;
     }
     m_objects.push_back(obj);
+
+    if (args.name == "")
+    {
+        args.name = objectTypes[(int)type];
+        args.name += " ";
+        args.name += std::to_string(getObjectCount());
+    }
+
+    // add remote parameters for object
+    std::vector<RsParam> params;
+    params.push_back(RsParam(args.name + "pos_x", "posX", args.name, args.pos.x, -1000, 1000, 0.1));
+    params.push_back(RsParam(args.name + "pos_y", "posY", args.name, args.pos.y, -1000, 1000, 0.1));
+    params.push_back(RsParam(args.name + "pos_z", "posZ", args.name, args.pos.z, -1000, 1000, 0.1));
+    params.push_back(RsParam(args.name + "rot_x", "rotX", args.name, 0, 0, 359, 1));
+    params.push_back(RsParam(args.name + "rot_y", "rotY", args.name, 0, 0, 359, 1));
+    params.push_back(RsParam(args.name + "rot_z", "rotZ", args.name, 0, 0, 359, 1));
+
+    for (const RsParam& param : params)
+        m_rsScene->addParam(param);
+
+    App::getSchema().reloadScene(*m_rsScene);
+    App::reloadSchema();
+
     return obj;
 }
 
@@ -164,7 +190,7 @@ Camera* Scene::getCurrentCamera() {
     return m_currentCamera;
 }
 
-RsScene* Scene::getRsScene()
+int Scene::getObjectCount()
 {
-    return m_rsScene;
+    return m_objects.size();
 }
