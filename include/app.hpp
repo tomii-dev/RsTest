@@ -51,6 +51,7 @@ struct UiState
     bool newSceneWinOpen;
     ObjectConfig currentObj;
     SceneConfig currentScene;
+    bool exit;
 };
 
 struct UpdateQueue
@@ -85,6 +86,7 @@ private:
     UpdateQueue m_updateQueue;
     std::vector<uint8_t> m_desc;
     std::vector<float> m_params;
+    std::vector<ImageFrameData> m_imgData;
     uint64_t m_hash;
     int loadRenderStream();
 	int handleStreams();
@@ -101,6 +103,7 @@ public:
 	static App* getInstance();
     static RsSchema& getSchema();
     static const std::vector<float>& getParams();
+    static const std::vector<ImageFrameData>& getImgData();
     static Scene* getCurrentScene();
     static void reloadSchema();
 };
