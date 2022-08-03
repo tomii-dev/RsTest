@@ -6,6 +6,8 @@
 
 #include "lightsource.hpp"
 
+#include "d3/d3renderstream.h"
+
 class Scene;
 
 class Object{
@@ -15,10 +17,14 @@ protected:
     Scene* m_scene;
     glm::mat4 m_model;
     glm::mat4 m_rotation;
+    GLuint m_texture;
+    glm::vec2 m_lastTexSize;
+    virtual void init();
 public:
     Object();
     Object(Scene* scene, glm::vec3 pos, glm::vec3 size);
-    virtual void update();
+    // take in image data to update texture
+    virtual void update(const ImageFrameData& imgData = ImageFrameData());
     virtual void draw();
     void rotate(float deg, glm::vec3 dir);
     glm::vec3 getPosition();
