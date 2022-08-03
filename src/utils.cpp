@@ -24,6 +24,8 @@ namespace utils {
 	decltype(rs_shutdown)* rsShutdown;
     decltype(rs_setSchema)* rsSetSchema;
     decltype(rs_getFrameParameters)* rsGetFrameParams;
+    decltype(rs_getFrameImageData)* rsGetFrameImageData;
+    decltype(rs_getFrameImage)* rsGetFrameImage;
 
     const std::string rsErrorStrs[] = {
            "RS_ERROR_SUCCESS",
@@ -60,6 +62,7 @@ namespace utils {
 
 		GLuint vs = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vs, 1, vsSrc, NULL);
+        glCompileShader(vs);
 		glAttachShader(program, vs);
 		glGetShaderiv(vs, GL_COMPILE_STATUS, &compiled);
 		if (!compiled)
@@ -67,6 +70,7 @@ namespace utils {
 
 		GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(fs, 1, fsSrc, NULL);
+        glCompileShader(fs);
 		glAttachShader(program, fs);
 		glGetShaderiv(fs, GL_COMPILE_STATUS, &compiled);
 		if (!compiled)
@@ -171,6 +175,45 @@ namespace utils {
     {
         return rsErrorStrs[err];
     }
+
+    const char* glInternalFormatStr(GLint format)
+    {
+        switch (format)
+        {
+        case GL_RGBA8:
+            return "GL_RGBA8";
+        case GL_RGBA32F:
+            return "GL_RGBA32F";
+        case GL_RGBA16:
+            return "GL_RGBA16";
+        default:
+            return "unknown format";
+        }
+    }
+
+    const char* glFormatStr(GLint format)
+    {
+        switch(format) 
+        {
+        case GL_BGRA:
+            return "GL_BGRA";
+        case GL_RGBA:
+            return "GL_RGBA";
+        }
+    }
+
+    const char* glTypeStr(GLenum type)
+    {
+        switch (type)
+        {
+        case GL_UNSIGNED_BYTE:
+            return "GL_UNSIGNED_BYTE";
+        case GL_FLOAT:
+            return "GL_FLOAT";
+        case GL_UNSIGNED_SHORT:
+            return "GL_UNSIGNED_SHORT";
+        }
+    }
 }
 
 RsSchema::RsSchema() 
@@ -210,7 +253,7 @@ void RsScene::addParam(const RemoteParameter& param)
     ++nParameters;
 }
 
-RsParam::RsParam(const std::string& key, const std::string& display,
+RsFloatParam::RsFloatParam(const std::string& key, const std::string& display,
     const std::string& group, float defaultVal, float min, float max, float step,
     const std::vector<std::string>& opt, bool allowSequencing)
 {
@@ -243,4 +286,19 @@ RsParam::RsParam(const std::string& key, const std::string& display,
 
     if (!allowSequencing)
         flags |= REMOTEPARAMETER_NO_SEQUENCE;
+}
+
+RsTextureParam::RsTextureParam(const std::string& key, const std::string& display,
+                                const std::string& group)
+{
+    this->group                     = _strdup(group.c_str());
+    this->displayName               = _strdup(display.c_str());
+    this->key                       = _strdup(key.c_str());
+    this->type                      = RS_PARAMETER_IMAGE;
+
+    nOptions                        = 0;
+    options                         = nullptr;
+    dmxOffset                       = -1;
+    dmxType                         = RS_DMX_16_BE;
+    flags                           = REMOTEPARAMETER_NO_FLAGS;
 }
