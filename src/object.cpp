@@ -63,7 +63,6 @@ void Object::update(const ImageFrameData& imgData)
     if (size == m_lastTexSize)
         return;
 
-    // TODO: Maybe only generate new texture
     glGenTextures(1, &m_texture);
     glBindTexture(GL_TEXTURE_2D, m_texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
