@@ -73,7 +73,6 @@ void Object::update(const ImageFrameData& imgData)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     glTexImage2D(GL_TEXTURE_2D, 0, utils::glInternalFormat(imgData.format), size.x, size.y,
         0, utils::glFormat(imgData.format), utils::glType(imgData.format), nullptr);
-    utils::checkGLError();
     SenderFrameTypeData data;
     data.gl.texture = m_texture;
     if (utils::rsGetFrameImage(imgData.imageId, RS_FRAMETYPE_OPENGL_TEXTURE, data))
@@ -93,3 +92,8 @@ void Object::rotate(float deg, glm::vec3 dir)
 }
 
 void Object::init() {}
+
+ObjectType Object::getType()
+{
+    return m_type;
+}
