@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "lightsource.hpp"
+#include "scene.hpp"
 
 #include "d3/d3renderstream.h"
 
@@ -12,6 +13,7 @@ class Scene;
 
 class Object{
 protected:
+    ObjectType m_type;
     glm::vec3 m_position;
     glm::vec3 m_size;
     Scene* m_scene;
@@ -30,6 +32,7 @@ public:
     glm::vec3 getPosition();
     void setPosition(glm::vec3 pos);
     float getSize();
+    ObjectType getType();
     void setSize(float size);
     void setRotation(float x, float y, float z);
 };
