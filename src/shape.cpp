@@ -65,7 +65,9 @@ void Shape::update(const ImageFrameData& imgData) {
 }
 
 void Shape::draw() {
+    glBindTexture(GL_TEXTURE_2D, m_texture);
 	glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, nullptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 Cube::Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour)
@@ -75,6 +77,9 @@ Cube::Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour)
 }
 
 void Cube::init() {
+
+    m_type = Object_Cube;
+
 	// temporary
 	// TODO: write algorithm to calculate vertices from center point
 	std::vector<float> vertices = {
@@ -145,6 +150,9 @@ Sphere::Sphere(Scene* scene, glm::vec3 pos, float radius, int stackCount, int se
 }
 
 void Sphere::init() {
+
+    m_type = Object_Sphere;
+
 	int stackIt = 0;
 	int	secIt = 0;
 	float stackStep = PI / m_stackCount;
