@@ -120,7 +120,7 @@ void Scene::render(){
     {
         Object* obj = m_objects[i];
 
-        int ind = !i ? 0 : i + 5;
+        int ind = !i ? 0 : i * 6;
 
         // set object position and rotation to values returned by frame parameters
         obj->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
@@ -135,10 +135,10 @@ void Scene::render(){
 Object* Scene::addObject(ObjectType type, ObjectArgs args){
     Object* obj;
     switch(type){
-    case ObjectType::Cube:
+    case Object_Cube:
         obj = new Cube(this, args.pos, args.size, args.colour);
         break;
-    case ObjectType::Sphere:
+    case Object_Sphere:
         obj = new Sphere(this, args.pos, args.size, args.stackCount, args.sectorCount, args.colour);
         break;
     }
@@ -146,9 +146,9 @@ Object* Scene::addObject(ObjectType type, ObjectArgs args){
 
     if (args.name == "")
     {
-        args.name = objectTypes[(int)type];
+        args.name = objectTypes[type];
         args.name += " ";
-        args.name += std::to_string(getObjectCount());
+        args.name += std::to_string(getObjectCount(type));
     }
 
     // add remote parameters for object
@@ -194,4 +194,13 @@ Camera* Scene::getCurrentCamera() {
 int Scene::getObjectCount()
 {
     return m_objects.size();
+}
+
+int Scene::getObjectCount(ObjectType type)
+{
+    int count = 0;
+    for (Object* o : m_objects)
+        if (o->getType() == type)
+            count++;
+    return count;
 }

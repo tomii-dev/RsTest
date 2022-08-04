@@ -15,9 +15,9 @@ class RsScene;
 class Object;
 class LightSource;
 
-enum class ObjectType {
-    Cube,
-    Sphere
+enum ObjectType {
+    Object_Cube,
+    Object_Sphere
 };
 
 struct ObjectArgs {
@@ -49,5 +49,7 @@ public:
     Camera* addCamera(glm::vec3 pos = VEC0, float fov = 45.f);
     Camera* getCurrentCamera();
     const char* getName();
+
     int getObjectCount();
+    int getObjectCount(ObjectType type);
 };
