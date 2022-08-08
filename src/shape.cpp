@@ -5,14 +5,12 @@
 #include "scene.hpp"
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/vector_angle.hpp>
-#include "texture.hpp"
 #include "app.hpp"
 
-Shape::Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour, std::string texPath)
+Shape::Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour)
 	: Object		(scene, pos, glm::vec3(size)),
 	  m_size		(size),
-	  m_colour		(colour),
-	  m_texture		(texPath)
+	  m_colour		(colour)
 {}
 
 void Shape::init() {
@@ -53,40 +51,35 @@ void Shape::init() {
 	glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float)*2, 0);
 }
 
-void Shape::update() {
+void Shape::update(const ImageFrameData& imgData) {
 
-	Object::update();
+    glBindVertexArray(m_vao);
+
+	Object::update(imgData);
 
 	const unsigned int shader = m_scene->getShader();
-
-	glBindVertexArray(m_vao);
 
 	// set colour uniform
 	const unsigned int colorLoc = glGetUniformLocation(shader, "u_ObjectColour");
 	glUniform3fv(colorLoc, 1, &m_colour[0]);
-
-	// bind and set texture
-	unsigned int isTexLoc = glGetUniformLocation(shader, "u_IsTextured");
-	if (m_texture.getWidth()) {
-		m_texture.bind();
-		const unsigned int texLoc = glGetUniformLocation(shader, "u_Texture");
-		glUniform1i(texLoc, 0);
-		glUniform1i(isTexLoc, 1);
-	}
-	else glUniform1i(isTexLoc, 0);
 }
 
 void Shape::draw() {
+    glBindTexture(m_texture.target, m_texture.id);
 	glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, nullptr);
+    glBindTexture(m_texture.target, 0);
 }
 
-Cube::Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour, std::string texPath)
-	: Shape(scene, pos, size, colour, texPath)
+Cube::Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour)
+	: Shape(scene, pos, size, colour)
 {
 	init();
 }
 
 void Cube::init() {
+
+    m_type = Object_Cube;
+
 	// temporary
 	// TODO: write algorithm to calculate vertices from center point
 	std::vector<float> vertices = {
@@ -132,24 +125,11 @@ void Cube::init() {
 
 	m_normals = normals;
 
-	std::vector<float> texCoords = {
-		0.0f, 0.0f,
-		1.f, 0.f,
-		1.f, 0.f,
-		0.f, 0.f,
-		1.f, 1.f,
-		1.f, 1.f,
-		0.f, 1.f,
-		0.f, 1.f
-	};
-
-	m_texCoords = texCoords;
-
 	Shape::init();
 }
 
-Sphere::Sphere(Scene* scene, glm::vec3 pos, float radius, int stackCount, int sectorCount, glm::vec3 colour, std::string texPath)
-	: Shape				(scene, pos, radius * 2.f, colour, texPath),
+Sphere::Sphere(Scene* scene, glm::vec3 pos, float radius, int stackCount, int sectorCount, glm::vec3 colour)
+	: Shape				(scene, pos, radius * 2.f, colour),
 	  m_stackCount		(stackCount),
 	  m_sectorCount		(sectorCount)
 {
@@ -157,6 +137,9 @@ Sphere::Sphere(Scene* scene, glm::vec3 pos, float radius, int stackCount, int se
 }
 
 void Sphere::init() {
+
+    m_type = Object_Sphere;
+
 	int stackIt = 0;
 	int	secIt = 0;
 	float stackStep = PI / m_stackCount;

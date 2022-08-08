@@ -7,7 +7,6 @@
 #include <string>
 
 #include "object.hpp"
-#include "texture.hpp"
 
 #define WHITE glm::vec3(1,1,1)
 
@@ -20,7 +19,6 @@ protected:
 	unsigned int m_nbo;
 	unsigned int m_tbo;
 	unsigned int m_shader;
-	Texture m_texture;
 	std::vector<float> m_vertices;
 	std::vector<unsigned int> m_indices;
 	std::vector<float> m_normals;
@@ -29,15 +27,15 @@ protected:
 	glm::vec3 m_colour;
 	virtual void init();
 public:
-	Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour, std::string texPath);
-	void update() override;
+	Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour);
+	void update(const ImageFrameData& imgData) override;
 	void draw() override;
 };
 
 class Cube : public Shape{
 	void init() override;
 public:
-	Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour=WHITE, std::string texPath="");
+	Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour=WHITE);
 };
 
 class Sphere : public Shape {
@@ -45,7 +43,7 @@ class Sphere : public Shape {
 	int m_sectorCount;
 	void init() override;
 public:
-	Sphere(Scene* scene, glm::vec3 pos, float size, int stackCount, int sectorCount, glm::vec3 colour=WHITE, std::string texPath = "");
+	Sphere(Scene* scene, glm::vec3 pos, float size, int stackCount, int sectorCount, glm::vec3 colour=WHITE);
 	int getStacks();
 	void setStacks(int count);
 	int getSectors();

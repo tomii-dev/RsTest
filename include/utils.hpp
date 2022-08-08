@@ -55,12 +55,19 @@ public:
     void reloadScene(RsScene& scene);
 };
 
-class RsParam : public RemoteParameter
+class RsFloatParam : public RemoteParameter
 {
 public:
-    RsParam(const std::string& key, const std::string& display,
+    RsFloatParam(const std::string& key, const std::string& display,
         const std::string& group, float defaultVal, float min = 0, float max = 255,
         float step = 1, const std::vector<std::string>& opt = {}, bool allowSequencing = true);
+};
+
+class RsTextureParam : public RemoteParameter
+{
+public:
+    RsTextureParam(const std::string& key, const std::string& display,
+        const std::string& group);
 };
 
 namespace utils {
@@ -75,6 +82,8 @@ namespace utils {
 	extern decltype(rs_shutdown)* rsShutdown;
     extern decltype(rs_setSchema)* rsSetSchema;
     extern decltype(rs_getFrameParameters)* rsGetFrameParams;
+    extern decltype(rs_getFrameImageData)* rsGetFrameImageData;
+    extern decltype(rs_getFrameImage)* rsGetFrameImage;
 
 	struct ShaderProgramSource {
 		std::string vertexSource;
@@ -95,4 +104,8 @@ namespace utils {
 	GLenum glType(RSPixelFormat format);
 
     const std::string& rsErrorStr(RS_ERROR);
+
+    const char* glInternalFormatStr(GLint format);
+    const char* glFormatStr(GLint format);
+    const char* glTypeStr(GLenum type);
 }

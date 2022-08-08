@@ -72,6 +72,8 @@ int App::loadRenderStream()
     LOAD_FN(rs_shutdown);
     LOAD_FN(rs_setSchema);
     LOAD_FN(rs_getFrameParameters);
+    LOAD_FN(rs_getFrameImageData);
+    LOAD_FN(rs_getFrameImage);
 
     if (rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR))
         return utils::error("failed to init RenderStream!");
@@ -88,6 +90,8 @@ int App::loadRenderStream()
     utils::rsShutdown				= rs_shutdown;
     utils::rsSetSchema              = rs_setSchema;
     utils::rsGetFrameParams         = rs_getFrameParameters;
+    utils::rsGetFrameImageData      = rs_getFrameImageData;
+    utils::rsGetFrameImage          = rs_getFrameImage;
 
     return 0;
 }
@@ -179,14 +183,27 @@ int App::sendFrames()
             }
 
             const RemoteParameters& rsScene = m_schema.scenes.scenes[m_frame.scene];
-            m_params.resize(rsScene.nParameters);
-            if (utils::rsGetFrameParams(rsScene.hash, m_params.data(), m_params.size() * sizeof(float)))
-                utils::logToD3("failed to get frame params");
+            
+            const int objCount = m_currentScene->getObjectCount();
+
+            if (objCount)
+            {
+                if (m_imgData.size() != objCount)
+                    m_imgData.resize(objCount);
+
+                if (utils::rsGetFrameImageData(rsScene.hash, m_imgData.data(), m_imgData.size()))
+                    utils::logToD3("failed to get image param data");
+
+                if (m_params.size() != rsScene.nParameters)
+                    m_params.resize(rsScene.nParameters);
+
+                if (utils::rsGetFrameParams(rsScene.hash, m_params.data(), (m_params.size() - objCount) * sizeof(float)))
+                    continue;
+            }
 
             Camera* cam = m_currentScene->getCurrentCamera();
             cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
             cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
-            m_currentScene->update();
             m_currentScene->render();
             SenderFrameTypeData data;
             data.gl.texture = target.texture;
@@ -246,6 +263,9 @@ void App::renderUi()
     if (ImGui::Button("New scene"))
         m_uiState.newSceneWinOpen = true;
 
+    if (ImGui::Button("Exit"))
+        m_uiState.exit = true;
+
     // Window for adding object
     if (m_uiState.addObjectWinOpen)
     {
@@ -300,6 +320,11 @@ RsSchema& App::getSchema()
 const std::vector<float>& App::getParams()
 {
     return s_instance->m_params;
+}
+
+const std::vector<ImageFrameData>& App::getImgData()
+{
+    return s_instance->m_imgData;
 }
 
 Scene* App::getCurrentScene()
@@ -371,6 +396,9 @@ int App::run()
 
 	while(true)
 	{
+        if (m_uiState.exit)
+            break;
+
         glfwMakeContextCurrent(m_window);
 
         measureFps();

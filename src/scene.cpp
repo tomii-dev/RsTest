@@ -14,14 +14,15 @@
 Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1))),
                                  m_rsScene      (new RsScene())
 {
-    const GLchar* vsSource[] = {R"src(#version 120
-    attribute vec4 a_Position;
-    attribute vec4 a_Normal;
-    attribute vec2 a_TexCoord;
+    const GLchar* vsSource[] = {R"src(#version 330 core
+    in vec4 a_Position;
+    in vec4 a_Normal;
+    in vec2 a_TexCoord;
 
-    varying vec4 fragPos;
-    varying vec4 normal;
-    varying vec2 texCoord;
+    out vec4 fragPos;
+    out vec4 normal;
+    out vec2 texCoord;
+    out vec3 cubeMapTexCoord;
 
     uniform mat4 u_Model;
     uniform mat4 u_View;
@@ -30,30 +31,37 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     void main() {
         fragPos = u_Model * a_Position;
         normal = u_Model * a_Normal;
-        texCoord = a_TexCoord;
+        texCoord = normalize(a_Position.xy);
+        cubeMapTexCoord = vec3(a_Position);
         gl_Position = u_Proj * u_View * fragPos;
     }
     )src" };
 
-    const GLchar* fsSource[] = {R"src(#version 120
-    varying vec4 fragPos;
-    varying vec4 normal;
-    varying vec2 texCoord;
+    const GLchar* fsSource[] = {R"src(#version 330 core
+    in vec4 fragPos;
+    in vec4 normal;
+    in vec2 texCoord;
+    in vec3 cubeMapTexCoord;
 
     uniform vec3 u_LightPos;
     uniform vec3 u_LightColour;
     uniform float u_LightBrightness;
+    uniform int u_ObjectType;
     uniform vec3 u_ObjectColour;
     uniform float u_AmbientStrength;
     uniform bool u_IsTextured;
     uniform sampler2D u_Texture;
+    uniform samplerCube u_CubeMap;
 
     void main(){
 	    vec3 ambient = u_AmbientStrength * u_LightColour;
 	    vec4 norm = normalize(normal);
 	    vec4 texColour;
 	    if (u_IsTextured)
-		    texColour = texture2D(u_Texture, texCoord);
+            if(u_ObjectType == 0)
+                texColour = texture(u_CubeMap, cubeMapTexCoord);
+            else
+		        texColour = texture(u_Texture, texCoord);
 	    else
 		    texColour = vec4(1, 1, 1, 1);
 	    vec4 lightDir = normalize(vec4(u_LightPos, 1.f) - fragPos);
@@ -99,7 +107,7 @@ void Scene::updateMatrices() {
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, &(m_projection * m_view)[0][0]);
 }
 
-void Scene::update(){
+void Scene::render(){
     if (!m_lightSources.size()) {
         std::cout << "no light source!!\n";
         return;
@@ -115,53 +123,54 @@ void Scene::update(){
     glUniform1f(ambientLoc, m_lightSources[0].getAmbientStrength());
 
     const std::vector<float>& params = App::getParams();
-    std::vector<Object*>::iterator it;
-    for (it = m_objects.begin(); it != m_objects.end(); ++it)
+    const std::vector<ImageFrameData>& imgData = App::getImgData();
+    for (int i = 0; i < m_objects.size(); ++i)
     {
-        const int ind = !(it - m_objects.begin()) ? 0 : it - m_objects.begin() + 5;
-        (*it)->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
-        (*it)->setRotation(-params[ind + 5], params[ind + 3], -params[ind + 4]);
-    }
-}
+        Object* obj = m_objects[i];
 
-void Scene::render(){
-    for (Object* obj : m_objects) {
-        obj->update();
+        int ind = !i ? 0 : i * 6;
+
+        // set object position and rotation to values returned by frame parameters
+        obj->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
+        obj->setRotation(-params[ind + 5], params[ind + 3], -params[ind + 4]);
+
+        obj->update(imgData[i]);
+
         obj->draw();
     }
-    for (LightSource& l : m_lightSources)
-        l.render();
 }
 
 Object* Scene::addObject(ObjectType type, ObjectArgs args){
     Object* obj;
     switch(type){
-    case ObjectType::Cube:
-        obj = new Cube(this, args.pos, args.size, args.colour, args.texPath);
+    case Object_Cube:
+        obj = new Cube(this, args.pos, args.size, args.colour);
         break;
-    case ObjectType::Sphere:
-        obj = new Sphere(this, args.pos, args.size, args.stackCount, args.sectorCount, args.colour, args.texPath);
+    case Object_Sphere:
+        obj = new Sphere(this, args.pos, args.size, args.stackCount, args.sectorCount, args.colour);
         break;
     }
     m_objects.push_back(obj);
 
     if (args.name == "")
     {
-        args.name = objectTypes[(int)type];
+        args.name = objectTypes[type];
         args.name += " ";
-        args.name += std::to_string(getObjectCount());
+        args.name += std::to_string(getObjectCount(type));
     }
 
     // add remote parameters for object
-    std::vector<RsParam> params;
-    params.push_back(RsParam(args.name + "pos_x", "posX", args.name, args.pos.x, -1000, 1000, 0.1));
-    params.push_back(RsParam(args.name + "pos_y", "posY", args.name, args.pos.y, -1000, 1000, 0.1));
-    params.push_back(RsParam(args.name + "pos_z", "posZ", args.name, args.pos.z, -1000, 1000, 0.1));
-    params.push_back(RsParam(args.name + "rot_x", "rotX", args.name, 0, 0, 359, 1));
-    params.push_back(RsParam(args.name + "rot_y", "rotY", args.name, 0, 0, 359, 1));
-    params.push_back(RsParam(args.name + "rot_z", "rotZ", args.name, 0, 0, 359, 1));
+    std::vector<RemoteParameter> params;
+    params.push_back(RsFloatParam(args.name + "pos_x", "posX", args.name, args.pos.x, -1000, 1000, 0.1));
+    params.push_back(RsFloatParam(args.name + "pos_y", "posY", args.name, args.pos.y, -1000, 1000, 0.1));
+    params.push_back(RsFloatParam(args.name + "pos_z", "posZ", args.name, args.pos.z, -1000, 1000, 0.1));
+    params.push_back(RsFloatParam(args.name + "rot_x", "rotX", args.name, 0, 0, 359, 1));
+    params.push_back(RsFloatParam(args.name + "rot_y", "rotY", args.name, 0, 0, 359, 1));
+    params.push_back(RsFloatParam(args.name + "rot_z", "rotZ", args.name, 0, 0, 359, 1));
 
-    for (const RsParam& param : params)
+    params.push_back(RsTextureParam(args.name + "texture", "texture", args.name));
+
+    for (const RemoteParameter& param : params)
         m_rsScene->addParam(param);
 
     App::getSchema().reloadScene(*m_rsScene);
@@ -193,4 +202,13 @@ Camera* Scene::getCurrentCamera() {
 int Scene::getObjectCount()
 {
     return m_objects.size();
+}
+
+int Scene::getObjectCount(ObjectType type)
+{
+    int count = 0;
+    for (Object* o : m_objects)
+        if (o->getType() == type)
+            count++;
+    return count;
 }

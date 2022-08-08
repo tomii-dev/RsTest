@@ -15,9 +15,9 @@ class RsScene;
 class Object;
 class LightSource;
 
-enum class ObjectType {
-    Cube,
-    Sphere
+enum ObjectType {
+    Object_Cube,
+    Object_Sphere
 };
 
 struct ObjectArgs {
@@ -25,7 +25,6 @@ struct ObjectArgs {
     glm::vec3 pos = VEC0;
     float size = 1.0f;
     glm::vec3 colour = VEC1;
-    std::string texPath = "LINUS.jpg";
     int stackCount = 18;
     int sectorCount = 36;
 };
@@ -43,7 +42,6 @@ public:
     Scene(const char* name);
     ~Scene();
     void updateMatrices();
-    void update();
     void render();
     Object* addObject(ObjectType type, ObjectArgs args);
     unsigned int getShader();
@@ -51,5 +49,7 @@ public:
     Camera* addCamera(glm::vec3 pos = VEC0, float fov = 45.f);
     Camera* getCurrentCamera();
     const char* getName();
+
     int getObjectCount();
+    int getObjectCount(ObjectType type);
 };
