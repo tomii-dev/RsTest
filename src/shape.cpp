@@ -65,9 +65,9 @@ void Shape::update(const ImageFrameData& imgData) {
 }
 
 void Shape::draw() {
-    glBindTexture(GL_TEXTURE_2D, m_texture);
+    glBindTexture(m_texture.target, m_texture.id);
 	glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, nullptr);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(m_texture.target, 0);
 }
 
 Cube::Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour)
@@ -124,19 +124,6 @@ void Cube::init() {
 	};
 
 	m_normals = normals;
-
-	std::vector<float> texCoords = {
-		0.0f, 0.0f,
-		1.f, 0.f,
-		1.f, 0.f,
-		0.f, 0.f,
-		1.f, 1.f,
-		1.f, 1.f,
-		0.f, 1.f,
-		0.f, 1.f
-	};
-
-	m_texCoords = texCoords;
 
 	Shape::init();
 }
