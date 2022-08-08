@@ -11,6 +11,12 @@
 
 class Scene;
 
+struct Texture
+{
+    GLuint id;
+    GLenum target;
+};
+
 class Object{
 protected:
     ObjectType m_type;
@@ -19,7 +25,7 @@ protected:
     Scene* m_scene;
     glm::mat4 m_model;
     glm::mat4 m_rotation;
-    GLuint m_texture;
+    Texture m_texture;
     glm::vec2 m_lastTexSize;
     virtual void init();
 public:
