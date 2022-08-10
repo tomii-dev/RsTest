@@ -35,6 +35,7 @@ class Scene {
     glm::mat4 m_view;
     glm::mat4 m_projection;
     std::vector<Object*> m_objects;
+    std::vector<const char*> m_objNames;
     std::vector<LightSource> m_lightSources;
     std::vector<Camera> m_cameras;
     RsScene* m_rsScene;
@@ -44,6 +45,7 @@ public:
     void updateMatrices();
     void render();
     Object* addObject(ObjectType type, ObjectArgs args);
+    void removeObject(Object* obj);
     unsigned int getShader();
     LightSource* addLightSource(glm::vec3 position, float brightness=0.0f, float ambientStrength=0.0f, glm::vec3 colour=VEC0);
     Camera* addCamera(glm::vec3 pos = VEC0, float fov = 45.f);
@@ -52,4 +54,8 @@ public:
 
     int getObjectCount();
     int getObjectCount(ObjectType type);
+
+    const char** getObjectNames();
+
+    Object* operator [](int i);
 };
