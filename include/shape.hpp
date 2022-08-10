@@ -27,7 +27,7 @@ protected:
 	glm::vec3 m_colour;
 	virtual void init();
 public:
-	Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour);
+	Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour, const std::string& name);
 	void update(const ImageFrameData& imgData) override;
 	void draw() override;
 };
@@ -35,7 +35,7 @@ public:
 class Cube : public Shape{
 	void init() override;
 public:
-	Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour=WHITE);
+	Cube(Scene* scene, glm::vec3 pos, float size, const std::string& name, glm::vec3 colour=WHITE);
 };
 
 class Sphere : public Shape {
@@ -43,7 +43,7 @@ class Sphere : public Shape {
 	int m_sectorCount;
 	void init() override;
 public:
-	Sphere(Scene* scene, glm::vec3 pos, float size, int stackCount, int sectorCount, glm::vec3 colour=WHITE);
+	Sphere(Scene* scene, glm::vec3 pos, float size, const std::string& name, int stackCount, int sectorCount, glm::vec3 colour=WHITE);
 	int getStacks();
 	void setStacks(int count);
 	int getSectors();
