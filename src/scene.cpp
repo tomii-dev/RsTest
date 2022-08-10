@@ -31,7 +31,7 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     void main() {
         fragPos = u_Model * a_Position;
         normal = u_Model * a_Normal;
-        texCoord = normalize(a_Position.xy);
+        texCoord = a_TexCoord;
         cubeMapTexCoord = vec3(a_Position);
         gl_Position = u_Proj * u_View * fragPos;
     }
@@ -79,6 +79,14 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
 
     m_rsScene->name = name;
 
+    // Parameters for scene light
+    m_rsScene->addParam(RsFloatParam("lightpos_x", "posX", "light", 0, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam("lightpos_y", "posY", "light", 5, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam("lightpos_z", "posZ", "light", 0, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam("lightcol_r", "colR", "light", 255, 0, 255, 1));
+    m_rsScene->addParam(RsFloatParam("lightcol_g", "colG", "light", 255, 0, 255, 1));
+    m_rsScene->addParam(RsFloatParam("lightcol_b", "colB", "light", 255, 0, 255, 1));
+
     App::getSchema().addScene(*m_rsScene);
     App::reloadSchema();
 
@@ -117,18 +125,25 @@ void Scene::render(){
     const unsigned int brightnessLoc = glGetUniformLocation(m_shader, "u_LightBrightness");
     const unsigned int ambientLoc = glGetUniformLocation(m_shader, "u_AmbientStrength");
 
+    const std::vector<float>& params = App::getParams();
+    const std::vector<ImageFrameData>& imgData = App::getImgData();
+
+    if (!params.size())
+        return;
+
+    m_lightSources[0].setPosition(glm::vec3(params[2], -params[1], params[0]));
+    m_lightSources[0].setColour(glm::vec3(params[3] / 255, params[4] / 255, params[5] / 255));
+
     glUniform3fv(lightPosLoc, 1, &m_lightSources[0].getPosition()[0]);
     glUniform3fv(lightColourLoc, 1, &m_lightSources[0].getColour()[0]);
     glUniform1f(brightnessLoc, m_lightSources[0].getBrightness());
     glUniform1f(ambientLoc, m_lightSources[0].getAmbientStrength());
 
-    const std::vector<float>& params = App::getParams();
-    const std::vector<ImageFrameData>& imgData = App::getImgData();
     for (int i = 0; i < m_objects.size(); ++i)
     {
         Object* obj = m_objects[i];
 
-        int ind = !i ? 0 : i * 6;
+        int ind = (i + 1) * 6;
 
         // set object position and rotation to values returned by frame parameters
         obj->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
@@ -142,15 +157,6 @@ void Scene::render(){
 
 Object* Scene::addObject(ObjectType type, ObjectArgs args){
     Object* obj;
-    switch(type){
-    case Object_Cube:
-        obj = new Cube(this, args.pos, args.size, args.colour);
-        break;
-    case Object_Sphere:
-        obj = new Sphere(this, args.pos, args.size, args.stackCount, args.sectorCount, args.colour);
-        break;
-    }
-    m_objects.push_back(obj);
 
     if (args.name == "")
     {
@@ -159,19 +165,26 @@ Object* Scene::addObject(ObjectType type, ObjectArgs args){
         args.name += std::to_string(getObjectCount(type));
     }
 
-    // add remote parameters for object
-    std::vector<RemoteParameter> params;
-    params.push_back(RsFloatParam(args.name + "pos_x", "posX", args.name, args.pos.x, -1000, 1000, 0.1));
-    params.push_back(RsFloatParam(args.name + "pos_y", "posY", args.name, args.pos.y, -1000, 1000, 0.1));
-    params.push_back(RsFloatParam(args.name + "pos_z", "posZ", args.name, args.pos.z, -1000, 1000, 0.1));
-    params.push_back(RsFloatParam(args.name + "rot_x", "rotX", args.name, 0, 0, 359, 1));
-    params.push_back(RsFloatParam(args.name + "rot_y", "rotY", args.name, 0, 0, 359, 1));
-    params.push_back(RsFloatParam(args.name + "rot_z", "rotZ", args.name, 0, 0, 359, 1));
+    switch(type){
+    case Object_Cube:
+        obj = new Cube(this, args.pos, args.size, args.name.c_str(), args.colour);
+        break;
+    case Object_Sphere:
+        obj = new Sphere(this, args.pos, args.size, args.name.c_str(), args.stackCount, args.sectorCount, args.colour);
+        break;
+    }
 
-    params.push_back(RsTextureParam(args.name + "texture", "texture", args.name));
+    m_objects.push_back(obj);
+    m_objNames.push_back(obj->getName());
 
-    for (const RemoteParameter& param : params)
-        m_rsScene->addParam(param);
+    m_rsScene->addParam(RsFloatParam(args.name + "pos_x", "posX", args.name, args.pos.x, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam(args.name + "pos_y", "posY", args.name, args.pos.y, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam(args.name + "pos_z", "posZ", args.name, args.pos.z, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam(args.name + "rot_x", "rotX", args.name, 0, 0, 359, 1));
+    m_rsScene->addParam(RsFloatParam(args.name + "rot_y", "rotY", args.name, 0, 0, 359, 1));
+    m_rsScene->addParam(RsFloatParam(args.name + "rot_z", "rotZ", args.name, 0, 0, 359, 1));
+
+    m_rsScene->addParam(RsTextureParam(args.name + "texture", "texture", args.name));
 
     App::getSchema().reloadScene(*m_rsScene);
     App::reloadSchema();
@@ -179,13 +192,21 @@ Object* Scene::addObject(ObjectType type, ObjectArgs args){
     return obj;
 }
 
+void Scene::removeObject(Object* obj)
+{
+    m_objects.erase(std::remove(m_objects.begin(), m_objects.end(), obj));
+
+    m_rsScene->removeParamsForObj(obj);
+    App::getSchema().reloadScene(*m_rsScene);
+    App::reloadSchema();
+}
+
 unsigned int Scene::getShader(){
     return m_shader;
 }
 
 LightSource* Scene::addLightSource(glm::vec3 position, float brightness, float ambientStrength, glm::vec3 colour){
-    Cube* lightCube = new Cube(this, position, .02f);
-    LightSource light(position, brightness, ambientStrength, colour, lightCube);
+    LightSource light(position, brightness, ambientStrength, colour);
     m_lightSources.push_back(light);
     return &m_lightSources[m_lightSources.size() - 1];
 }
@@ -211,4 +232,14 @@ int Scene::getObjectCount(ObjectType type)
         if (o->getType() == type)
             count++;
     return count;
+}
+
+const char** Scene::getObjectNames()
+{
+    return &m_objNames[0];
+}
+
+Object* Scene::operator [](int i)
+{
+    return m_objects[i];
 }

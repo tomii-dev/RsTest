@@ -7,8 +7,8 @@
 #include <glm/gtx/vector_angle.hpp>
 #include "app.hpp"
 
-Shape::Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour)
-	: Object		(scene, pos, glm::vec3(size)),
+Shape::Shape(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour, const std::string& name)
+	: Object		(scene, pos, glm::vec3(size), name),
 	  m_size		(size),
 	  m_colour		(colour)
 {}
@@ -70,8 +70,8 @@ void Shape::draw() {
     glBindTexture(m_texture.target, 0);
 }
 
-Cube::Cube(Scene* scene, glm::vec3 pos, float size, glm::vec3 colour)
-	: Shape(scene, pos, size, colour)
+Cube::Cube(Scene* scene, glm::vec3 pos, float size, const std::string& name, glm::vec3 colour)
+	: Shape(scene, pos, size, colour, name)
 {
 	init();
 }
@@ -125,11 +125,13 @@ void Cube::init() {
 
 	m_normals = normals;
 
+    m_texCoords.resize(16);
+
 	Shape::init();
 }
 
-Sphere::Sphere(Scene* scene, glm::vec3 pos, float radius, int stackCount, int sectorCount, glm::vec3 colour)
-	: Shape				(scene, pos, radius * 2.f, colour),
+Sphere::Sphere(Scene* scene, glm::vec3 pos, float radius, const std::string& name, int stackCount, int sectorCount, glm::vec3 colour)
+	: Shape				(scene, pos, radius * 2.f, colour, name),
 	  m_stackCount		(stackCount),
 	  m_sectorCount		(sectorCount)
 {

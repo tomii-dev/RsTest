@@ -21,6 +21,8 @@
 
 #define STR( name ) # name
 
+class Object;
+
 struct RenderTarget {
 	GLuint texture;
 	GLuint frameBuf;
@@ -42,7 +44,8 @@ class RsScene : public RemoteParameters
     std::vector<RemoteParameter> m_params;
 public:
     RsScene();
-    void addParam(const RemoteParameter& param);
+    void addParam(RemoteParameter param);
+    void removeParamsForObj(Object* obj);
 };
 
 class RsSchema : public Schema
@@ -52,6 +55,7 @@ public:
     RsSchema();
     // the scene reference param would be const but it got upset at me
     void addScene(RsScene& scene);
+    void removeScene(const RsScene& scene);
     void reloadScene(RsScene& scene);
 };
 

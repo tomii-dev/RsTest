@@ -48,20 +48,28 @@ struct Config
 struct UiState
 {
     bool addObjectWinOpen;
+    bool remObjectWinOpen;
     bool newSceneWinOpen;
-    ObjectConfig currentObj;
+    ObjectConfig currentAddObj;
+    int currentRemObj;
     SceneConfig currentScene;
     bool exit;
 };
 
 struct UpdateQueue
 {
-    std::vector<ObjectConfig> objects;
+    std::vector<ObjectConfig> addObjects;
+    std::vector<Object*> removeObjects;
     std::vector<SceneConfig> scenes;
     void clear()
     {
-        objects.clear();
+        addObjects.clear();
+        removeObjects.clear();
         scenes.clear();
+    }
+    bool empty()
+    {
+        return addObjects.empty() && removeObjects.empty() && scenes.empty();
     }
 };
 

@@ -5,13 +5,14 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-Object::Object(){}
+Object::Object(const char* name) : m_name (name) {}
 
-Object::Object(Scene* scene, glm::vec3 pos, glm::vec3 size)
+Object::Object(Scene* scene, glm::vec3 pos, glm::vec3 size, const std::string& name)
     : m_scene       (scene),
       m_position    (pos),
       m_size        (size),
-      m_rotation    (1.0f)
+      m_rotation    (1.0f),
+      m_name        (name)
 {}
 
 glm::vec3 Object::getPosition()
@@ -99,6 +100,7 @@ void Object::update(const ImageFrameData& imgData)
         const GLsizei texSize = size.x > size.y ? size.x : size.y;
 
         // Get pixel data from texture provided by RS
+        // TODO: flip pixel data
         GLubyte* pxData = new GLubyte[texSize * texSize * 4];
         glGetTexImage(GL_TEXTURE_2D, 0, format, type, pxData);
 
@@ -116,9 +118,9 @@ void Object::update(const ImageFrameData& imgData)
 
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
         glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
@@ -145,4 +147,9 @@ void Object::init() {}
 ObjectType Object::getType()
 {
     return m_type;
+}
+
+const char* Object::getName()
+{
+    return m_name.c_str();
 }

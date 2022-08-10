@@ -20,6 +20,7 @@ struct Texture
 class Object{
 protected:
     ObjectType m_type;
+    std::string m_name;
     glm::vec3 m_position;
     glm::vec3 m_size;
     Scene* m_scene;
@@ -29,8 +30,8 @@ protected:
     glm::vec2 m_lastTexSize;
     virtual void init();
 public:
-    Object();
-    Object(Scene* scene, glm::vec3 pos, glm::vec3 size);
+    Object(const char* name);
+    Object(Scene* scene, glm::vec3 pos, glm::vec3 size, const std::string& name);
     // take in image data to update texture
     virtual void update(const ImageFrameData& imgData = ImageFrameData());
     virtual void draw();
@@ -41,4 +42,5 @@ public:
     ObjectType getType();
     void setSize(float size);
     void setRotation(float x, float y, float z);
+    const char* getName();
 };

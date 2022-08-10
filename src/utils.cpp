@@ -12,6 +12,7 @@
 
 #include "scene.hpp"
 #include "app.hpp"
+#include "object.hpp"
 
 namespace utils {
 
@@ -231,6 +232,14 @@ void RsSchema::addScene(RsScene& scene)
     ++scenes.nScenes;
 }
 
+void RsSchema::removeScene(const RsScene& scene)
+{
+    m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), 
+        [scene](const RemoteParameters& s) { return s.name == scene.name; }));
+    scenes.scenes = &m_scenes[0];
+    --scenes.nScenes;
+}
+
 void RsSchema::reloadScene(RsScene& scene)
 {
     for (RemoteParameters& s : m_scenes)
@@ -246,11 +255,23 @@ RsScene::RsScene()
     
 }
 
-void RsScene::addParam(const RemoteParameter& param)
+void RsScene::addParam(RemoteParameter param)
 {
     m_params.push_back(param);
     parameters = &m_params[0];
     ++nParameters;
+}
+
+void RsScene::removeParamsForObj(Object* obj)
+{
+    std::vector<RemoteParameter>::iterator it;
+    for (it = m_params.begin(); it != m_params.end();)
+        if (!strcmp(it->group, obj->getName()))
+            it = m_params.erase(it);
+        else ++it;
+
+    parameters = m_params.size() ? &m_params[0] : nullptr;
+    nParameters = m_params.size();
 }
 
 RsFloatParam::RsFloatParam(const std::string& key, const std::string& display,
