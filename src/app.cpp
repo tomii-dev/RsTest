@@ -175,10 +175,12 @@ int App::sendFrames()
 
             m_currentScene = m_scenes[m_frame.scene];
 
-            if (m_updateQueue.objects.size())
+            if (!m_updateQueue.empty())
             {
-                for (const ObjectConfig& obj : m_updateQueue.objects)
+                for (const ObjectConfig& obj : m_updateQueue.addObjects)
                     m_currentScene->addObject(obj.type, obj.args);
+                for (Object* obj : m_updateQueue.removeObjects)
+                    m_currentScene->removeObject(obj);
                 m_updateQueue.clear();
             }
 
@@ -260,6 +262,29 @@ void App::renderUi()
     if (ImGui::Button("Add object"))
         m_uiState.addObjectWinOpen = true;
 
+    const int objCount = m_currentScene->getObjectCount();
+
+    // Only show remove object options if there are objects in scene
+    if (objCount)
+    {
+        if (ImGui::Button("Remove object"))
+            m_uiState.remObjectWinOpen = true;
+
+        // Window for removing object
+        if (m_uiState.remObjectWinOpen)
+        {
+            ImGui::Begin("Remove object", 0, ImGuiWindowFlags_NoResize);
+            ImGui::Combo("Object", &m_uiState.currentRemObj, m_currentScene->getObjectNames(), objCount);
+            if (ImGui::Button("Remove"))
+            {
+                Object* obj = (*m_currentScene)[m_uiState.currentRemObj];
+                m_updateQueue.removeObjects.push_back(obj);
+                m_uiState.remObjectWinOpen = false;
+            }
+            ImGui::End();
+        }
+    }
+
     if (ImGui::Button("New scene"))
         m_uiState.newSceneWinOpen = true;
 
@@ -269,7 +294,7 @@ void App::renderUi()
     // Window for adding object
     if (m_uiState.addObjectWinOpen)
     {
-        ObjectConfig& obj = m_uiState.currentObj;
+        ObjectConfig& obj = m_uiState.currentAddObj;
         ImGui::SetNextWindowSize(ImVec2(275, 150));
         ImGui::Begin("Add object", 0, ImGuiWindowFlags_NoResize);
         ImGui::InputText("Name", &obj.args.name);
@@ -278,7 +303,7 @@ void App::renderUi()
         if (ImGui::Button("Add"))
         {
             m_uiState.addObjectWinOpen = false;
-            m_updateQueue.objects.push_back(obj);
+            m_updateQueue.addObjects.push_back(obj);
         }
         ImGui::End();
     }
