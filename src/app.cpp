@@ -33,7 +33,7 @@ App::App() : m_window		(nullptr),
              m_frame        (),
              m_schema       ()
 {
-	s_instance = this;
+    s_instance = this;
 }
 
 int App::loadRenderStream()
@@ -98,57 +98,57 @@ int App::loadRenderStream()
 
 int App::handleStreams() 
 {
-	RS_ERROR err = utils::rsAwaitFrameData(5000, &m_frame);
-	switch (err) {
-	case RS_ERROR_STREAMS_CHANGED:
-		try {
-			m_header = utils::getStreams(m_desc);
-			size_t nStreams = m_header ? m_header->nStreams : 0;
-			for (size_t i = 0; i < nStreams; ++i) {
-				const StreamDescription& desc = m_header->streams[i];
-				RenderTarget& target = m_targets[desc.handle];
-				glGenTextures(1, &target.texture);
-				utils::checkGLError(" generating tex");
-				glBindTexture(GL_TEXTURE_2D, target.texture);
-				utils::checkGLError(" binding texture");
+    RS_ERROR err = utils::rsAwaitFrameData(5000, &m_frame);
+    switch (err) {
+    case RS_ERROR_STREAMS_CHANGED:
+        try {
+            m_header = utils::getStreams(m_desc);
+            size_t nStreams = m_header ? m_header->nStreams : 0;
+            for (size_t i = 0; i < nStreams; ++i) {
+                const StreamDescription& desc = m_header->streams[i];
+                RenderTarget& target = m_targets[desc.handle];
+                glGenTextures(1, &target.texture);
+                utils::checkGLError(" generating tex");
+                glBindTexture(GL_TEXTURE_2D, target.texture);
+                utils::checkGLError(" binding texture");
 
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
-				glTexImage2D(GL_TEXTURE_2D, 0, utils::glInternalFormat(desc.format), desc.width, desc.height, 
+                glTexImage2D(GL_TEXTURE_2D, 0, utils::glInternalFormat(desc.format), desc.width, desc.height, 
                                             0, utils::glFormat(desc.format), utils::glType(desc.format), nullptr);
 
-				glBindTexture(GL_TEXTURE_2D, 0);
+                glBindTexture(GL_TEXTURE_2D, 0);
 
-				glGenFramebuffers(1, &target.frameBuf);
-				glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
+                glGenFramebuffers(1, &target.frameBuf);
+                glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
 
-				unsigned int rbo;
-				glGenRenderbuffers(1, &rbo);
-				glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-				glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, desc.width, desc.height);
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+                unsigned int rbo;
+                glGenRenderbuffers(1, &rbo);
+                glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, desc.width, desc.height);
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
-				glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target.texture, 0);
+                glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target.texture, 0);
 
-				GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
-				glDrawBuffers(1, bufs);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			}
-		}
+                GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+                glDrawBuffers(1, bufs);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+        }
         catch (const std::exception& e) {
             return utils::error(e.what());
         }
-	case RS_ERROR_TIMEOUT:
-	case RS_ERROR_SUCCESS: return 0;
+    case RS_ERROR_TIMEOUT:
+    case RS_ERROR_SUCCESS: return 0;
     case RS_ERROR_QUIT: return 0;
-	default:
+    default:
         return utils::error("rs_awaitFrameData returned " + utils::rsErrorStr(err));
-	}
+    }
 }
 
 int App::sendFrames() 
@@ -212,7 +212,7 @@ int App::sendFrames()
             SenderFrameTypeData data;
             data.gl.texture = target.texture;
             if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
-			    return 1;
+                return 1;
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
     }
@@ -344,7 +344,7 @@ void App::renderUi()
 
 App* App::getInstance() 
 {
-	return s_instance;
+    return s_instance;
 }
 
 RsSchema& App::getSchema()
@@ -383,7 +383,7 @@ int App::run()
         return utils::error("failed to initialise GLFW!");
 
     // create window and return if failed
-	m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "RsTest", NULL, NULL);
+    m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "RsTest", NULL, NULL);
     if (!m_window)
         utils::error("failed to create window :(");
 
@@ -406,8 +406,8 @@ int App::run()
     stbi_image_free(img.pixels);
 
     // hide window and set it to be current opengl context
-	glfwHideWindow(m_window);
-	glfwMakeContextCurrent(m_window);
+    glfwHideWindow(m_window);
+    glfwMakeContextCurrent(m_window);
 
     // set up imgui for metrics window
     IMGUI_CHECKVERSION();
@@ -445,22 +445,22 @@ int App::run()
 
         measureFps();
 
-	    if(handleStreams())
-		    break;
+        if(handleStreams())
+            break;
 
-	    if (sendFrames())
-		    break;
+        if (sendFrames())
+            break;
 
         renderUi();
 
-	    glfwPollEvents();
+        glfwPollEvents();
     }
 
     // clear up
     for (Scene* scene : m_scenes)
         delete scene;
 
-	return utils::rsShutdown();
+    return utils::rsShutdown();
 }
 
 float App::getWindowWidth() 

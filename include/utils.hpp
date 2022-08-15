@@ -24,8 +24,8 @@
 class Object;
 
 struct RenderTarget {
-	GLuint texture;
-	GLuint frameBuf;
+    GLuint texture;
+    GLuint frameBuf;
 };
 
 enum ColourSpace
@@ -41,6 +41,7 @@ static const char* objectTypes[] = { "Cube", "Sphere" };
 
 class RsScene : public RemoteParameters
 {
+private:
     std::vector<RemoteParameter> m_params;
 public:
     RsScene();
@@ -50,6 +51,7 @@ public:
 
 class RsSchema : public Schema
 {
+private:
     std::vector<RemoteParameters> m_scenes;
 public:
     RsSchema();
@@ -76,36 +78,36 @@ public:
 
 namespace utils {
 
-	// rs functions
-	extern decltype(rs_initialiseGpGpuWithOpenGlContexts)* rsInitialiseGpuOpenGl;
-	extern decltype(rs_getStreams)* rsGetStreams;
-	extern decltype(rs_sendFrame)* rsSendFrame;
-	extern decltype(rs_getFrameCamera)* rsGetFrameCamera;
-	extern decltype(rs_awaitFrameData)* rsAwaitFrameData;
-	extern decltype(rs_logToD3)* logToD3;
-	extern decltype(rs_shutdown)* rsShutdown;
+    // rs functions
+    extern decltype(rs_initialiseGpGpuWithOpenGlContexts)* rsInitialiseGpuOpenGl;
+    extern decltype(rs_getStreams)* rsGetStreams;
+    extern decltype(rs_sendFrame)* rsSendFrame;
+    extern decltype(rs_getFrameCamera)* rsGetFrameCamera;
+    extern decltype(rs_awaitFrameData)* rsAwaitFrameData;
+    extern decltype(rs_logToD3)* logToD3;
+    extern decltype(rs_shutdown)* rsShutdown;
     extern decltype(rs_setSchema)* rsSetSchema;
     extern decltype(rs_getFrameParameters)* rsGetFrameParams;
     extern decltype(rs_getFrameImageData)* rsGetFrameImageData;
     extern decltype(rs_getFrameImage)* rsGetFrameImage;
 
-	struct ShaderProgramSource {
-		std::string vertexSource;
-		std::string fragmentSource;
-	};
+    struct ShaderProgramSource {
+        std::string vertexSource;
+        std::string fragmentSource;
+    };
 
     int error(const std::string& msg="");
 
-	// create shader and return program id
-	unsigned int createShader(const GLchar* vsSrc[], const GLchar* fsSrc[]);
+    // create shader and return program id
+    unsigned int createShader(const GLchar* vsSrc[], const GLchar* fsSrc[]);
 
-	void checkGLError(const std::string& add = "");
+    void checkGLError(const std::string& add = "");
 
-	const StreamDescriptions* getStreams(std::vector<uint8_t>& desc);
+    const StreamDescriptions* getStreams(std::vector<uint8_t>& desc);
 
-	GLint glInternalFormat(RSPixelFormat format);
-	GLint glFormat(RSPixelFormat format);
-	GLenum glType(RSPixelFormat format);
+    GLint glInternalFormat(RSPixelFormat format);
+    GLint glFormat(RSPixelFormat format);
+    GLenum glType(RSPixelFormat format);
 
     const std::string& rsErrorStr(RS_ERROR);
 

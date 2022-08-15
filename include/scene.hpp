@@ -31,6 +31,7 @@ struct ObjectArgs {
 };
 
 class Scene {
+private:
     Camera* m_currentCamera;
     unsigned int m_shader;
     glm::mat4 m_view;

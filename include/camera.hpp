@@ -9,6 +9,7 @@
 class Scene;
 
 class Camera {
+private:
     std::string m_name;
     Scene* m_scene;
     glm::vec3 m_position;

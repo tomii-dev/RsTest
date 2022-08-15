@@ -5,6 +5,7 @@
 class Object;
 
 class LightSource{
+private:
     float m_brightness;
     float m_ambientStrength;
     glm::vec3 m_position;
