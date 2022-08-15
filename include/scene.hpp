@@ -7,6 +7,7 @@
 
 #include "camera.hpp"
 #include "utils.hpp"
+#include "lightsource.hpp"
 
 #define VEC0 glm::vec3(0,0,0)
 #define VEC1 glm::vec3(1,1,1)
@@ -35,9 +36,8 @@ class Scene {
     glm::mat4 m_view;
     glm::mat4 m_projection;
     std::vector<Object*> m_objects;
-    std::vector<const char*> m_objNames;
-    std::vector<LightSource> m_lightSources;
-    std::vector<Camera> m_cameras;
+    LightSource m_light;
+    std::vector<Camera*> m_cameras;
     RsScene* m_rsScene;
 public:
     Scene(const char* name);
@@ -47,15 +47,15 @@ public:
     Object* addObject(ObjectType type, ObjectArgs args);
     void removeObject(Object* obj);
     unsigned int getShader();
-    LightSource* addLightSource(glm::vec3 position, float brightness=0.0f, float ambientStrength=0.0f, glm::vec3 colour=VEC0);
     Camera* addCamera(glm::vec3 pos = VEC0, float fov = 45.f);
     Camera* getCurrentCamera();
     const char* getName();
 
+    const std::vector<Object*>& getObjects();
+    const std::vector<Camera*>& getCameras();
+
     int getObjectCount();
     int getObjectCount(ObjectType type);
-
-    const char** getObjectNames();
 
     Object* operator [](int i);
 };
