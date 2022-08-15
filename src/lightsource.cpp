@@ -54,3 +54,8 @@ float LightSource::getAmbientStrength()
 {
     return m_ambientStrength;
 }
+
+void LightSource::setAmbientStrength(float strength)
+{
+    m_ambientStrength = strength;
+}

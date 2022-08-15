@@ -15,6 +15,7 @@ public:
     void render();
     float getBrightness();
     float getAmbientStrength();
+    void setAmbientStrength(float strength);
     void setBrightness(float brightness);
     glm::vec3 getPosition();
     void setPosition(glm::vec3 position);
