@@ -418,17 +418,17 @@ int App::run()
     ImGui::SetNextWindowSize(ImVec2(300, 250));
 
     // initialise glew library, used to get openGL functions
-	glewExperimental = GL_TRUE;
-	glewInit();
+    glewExperimental = GL_TRUE;
+    glewInit();
 
     // enable gl depth testing and set to draw when the incoming depth value is less than the stored depth value
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
-	HGLRC wglContext = glfwGetWGLContext(m_window);
-	HDC dc = GetDC(glfwGetWin32Window(m_window));
+    HGLRC wglContext = glfwGetWGLContext(m_window);
+    HDC dc = GetDC(glfwGetWin32Window(m_window));
 
-	if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
+    if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
         utils::error("failed to initialise RenderStream GPU interop");
 
     m_scenes.push_back(new Scene("scene 1"));
@@ -436,8 +436,8 @@ int App::run()
    
     m_frameInfo = FrameInfo(glfwGetTime());
 
-	while(true)
-	{
+    while(true)
+    {
         if (m_uiState.exit)
             break;
 
@@ -445,16 +445,16 @@ int App::run()
 
         measureFps();
 
-		if(handleStreams())
-			break;
+	    if(handleStreams())
+		    break;
 
-		if (sendFrames())
-			break;
+	    if (sendFrames())
+		    break;
 
         renderUi();
 
-		glfwPollEvents();
-	}
+	    glfwPollEvents();
+    }
 
     // clear up
     for (Scene* scene : m_scenes)
@@ -465,20 +465,20 @@ int App::run()
 
 float App::getWindowWidth() 
 {
-	return m_windowWidth;
+    return m_windowWidth;
 }
 
 float App::getWindowHeight() 
 {
-	return m_windowHeight;
+    return m_windowHeight;
 }
 
 void App::setWindowWidth(float width) {
-	m_windowWidth = width;
-	m_currentScene->updateMatrices();
+    m_windowWidth = width;
+    m_currentScene->updateMatrices();
 }
 
 void App::setWindowHeight(float height) {
-	m_windowHeight = height;
-	m_currentScene->updateMatrices();
+    m_windowHeight = height;
+    m_currentScene->updateMatrices();
 }
