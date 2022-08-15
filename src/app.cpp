@@ -166,21 +166,23 @@ int App::sendFrames()
             glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            // add any new scenes created in ui
-            if (m_updateQueue.scenes.size()) {
-                for (const SceneConfig& scene : m_updateQueue.scenes)
-                    m_scenes.push_back(new Scene(scene.name.c_str()));
-                m_updateQueue.clear();
-            }
-
             m_currentScene = m_scenes[m_frame.scene];
 
+            // Add and remove objects/scenes created in ui
             if (!m_updateQueue.empty())
             {
-                for (const ObjectConfig& obj : m_updateQueue.addObjects)
-                    m_currentScene->addObject(obj.type, obj.args);
-                for (Object* obj : m_updateQueue.removeObjects)
-                    m_currentScene->removeObject(obj);
+                const ObjectConfig* const addObj = m_updateQueue.addObject;
+                if (addObj)
+                    m_currentScene->addObject(addObj->type, addObj->args);
+
+                Object* const remObj = m_updateQueue.removeObject;
+                if (remObj)
+                    m_currentScene->removeObject(remObj);
+
+                const SceneConfig* const addScene = m_updateQueue.addScene;
+                if (addScene)
+                    m_scenes.push_back(new Scene(addScene->name.c_str()));
+
                 m_updateQueue.clear();
             }
 
@@ -273,12 +275,18 @@ void App::renderUi()
         // Window for removing object
         if (m_uiState.remObjectWinOpen)
         {
-            ImGui::Begin("Remove object", 0, ImGuiWindowFlags_NoResize);
-            ImGui::Combo("Object", &m_uiState.currentRemObj, m_currentScene->getObjectNames(), objCount);
+            std::vector<const char*> objNames;
+            for (Object* obj : m_currentScene->getObjects())
+                objNames.push_back(obj->getName());
+
+            ImGui::SetNextWindowSize(ImVec2(winX, winHalfY));
+            ImGui::SetNextWindowPos(ImVec2(0, winHalfY));
+            ImGui::Begin("Remove object", 0, flags | ImGuiWindowFlags_NoCollapse);
+            ImGui::Combo("Object", &m_uiState.currentRemObj, objNames.data(), objCount);
             if (ImGui::Button("Remove"))
             {
                 Object* obj = (*m_currentScene)[m_uiState.currentRemObj];
-                m_updateQueue.removeObjects.push_back(obj);
+                m_updateQueue.removeObject = obj;
                 m_uiState.remObjectWinOpen = false;
             }
             ImGui::End();
@@ -295,15 +303,16 @@ void App::renderUi()
     if (m_uiState.addObjectWinOpen)
     {
         ObjectConfig& obj = m_uiState.currentAddObj;
-        ImGui::SetNextWindowSize(ImVec2(275, 150));
-        ImGui::Begin("Add object", 0, ImGuiWindowFlags_NoResize);
+        ImGui::SetNextWindowSize(ImVec2(winX, winHalfY));
+        ImGui::SetNextWindowPos(ImVec2(0, winHalfY));
+        ImGui::Begin("Add object", 0, flags | ImGuiWindowFlags_NoCollapse);
         ImGui::InputText("Name", &obj.args.name);
         ImGui::Combo("Type", reinterpret_cast<int*>(&obj.type), objectTypes, IM_ARRAYSIZE(objectTypes));
         ImGui::InputFloat3("Position", &obj.args.pos[0]);
         if (ImGui::Button("Add"))
         {
             m_uiState.addObjectWinOpen = false;
-            m_updateQueue.addObjects.push_back(obj);
+            m_updateQueue.addObject = new ObjectConfig(obj);
         }
         ImGui::End();
     }
@@ -312,13 +321,14 @@ void App::renderUi()
     if (m_uiState.newSceneWinOpen)
     {
         SceneConfig& scene = m_uiState.currentScene;
-        ImGui::SetNextWindowSize(ImVec2(275, 150));
-        ImGui::Begin("New scene");
+        ImGui::SetNextWindowSize(ImVec2(winX, winHalfY));
+        ImGui::SetNextWindowPos(ImVec2(0, winHalfY));
+        ImGui::Begin("New scene", 0, flags | ImGuiWindowFlags_NoCollapse);
         ImGui::InputText("Name", &scene.name);
         if (ImGui::Button("Create"))
         {
             m_uiState.newSceneWinOpen = false;
-            m_updateQueue.scenes.push_back(scene);
+            m_updateQueue.addScene = new SceneConfig(scene);
             scene = SceneConfig();
         }
         ImGui::End();
@@ -378,10 +388,18 @@ int App::run()
         utils::error("failed to create window :(");
 
     // create window for metrics and controls
-    m_uiWindow = glfwCreateWindow(300, 200, "RsTest", NULL, NULL);
+    const int dispW = glfwGetVideoMode(glfwGetPrimaryMonitor())->width;
+    const int dispH = glfwGetVideoMode(glfwGetPrimaryMonitor())->height;
+    
+    const int minW = dispW * .16;
+    const int minH = dispH * .28;
+    const int maxW = minW * 2;
+    const int maxH = minH * 2;
+
+    m_uiWindow = glfwCreateWindow(minW, minH, "RsTest", NULL, NULL);
     if (!m_uiWindow)
         utils::error("failed to create ui window :(");
-    glfwSetWindowSizeLimits(m_uiWindow, 300, 200, 600, 400);
+    glfwSetWindowSizeLimits(m_uiWindow, minW, minH, maxW, maxH);
     GLFWimage img;
     img.pixels = stbi_load("C:/Program Files/RsTest/img/icon.png", &img.width, &img.height, 0, 4);
     glfwSetWindowIcon(m_uiWindow, 1, &img);
@@ -397,7 +415,7 @@ int App::run()
     ImGui_ImplGlfw_InitForOpenGL(m_uiWindow, true);
     ImGui_ImplOpenGL3_Init("#version 120");
     ImGui::StyleColorsDark();
-    ImGui::SetNextWindowSize(ImVec2(300, 200));
+    ImGui::SetNextWindowSize(ImVec2(300, 250));
 
     // initialise glew library, used to get openGL functions
 	glewExperimental = GL_TRUE;
@@ -415,7 +433,6 @@ int App::run()
 
     m_scenes.push_back(new Scene("scene 1"));
     m_currentScene = m_scenes[0];
-    LightSource* light = m_currentScene->addLightSource(glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1);
    
     m_frameInfo = FrameInfo(glfwGetTime());
 
@@ -438,6 +455,10 @@ int App::run()
 
 		glfwPollEvents();
 	}
+
+    // clear up
+    for (Scene* scene : m_scenes)
+        delete scene;
 
 	return utils::rsShutdown();
 }
