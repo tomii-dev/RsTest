@@ -12,7 +12,8 @@
 #include "app.hpp"
 
 Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1))),
-                                 m_rsScene      (new RsScene())
+                                 m_rsScene      (new RsScene()),
+                                 m_light        (glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1)
 {
     const GLchar* vsSource[] = {R"src(#version 330 core
     in vec4 a_Position;
@@ -86,6 +87,8 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     m_rsScene->addParam(RsFloatParam("lightcol_r", "colR", "light", 255, 0, 255, 1));
     m_rsScene->addParam(RsFloatParam("lightcol_g", "colG", "light", 255, 0, 255, 1));
     m_rsScene->addParam(RsFloatParam("lightcol_b", "colB", "light", 255, 0, 255, 1));
+    m_rsScene->addParam(RsFloatParam("amb_strength", "ambient strength", "light", .4, 0, .5, 0.05));
+    m_rsScene->addParam(RsFloatParam("brightness", "brightness", "light", 1, 0, 2, 0.1));
 
     App::getSchema().addScene(*m_rsScene);
     App::reloadSchema();
@@ -111,39 +114,40 @@ void Scene::updateMatrices() {
     const unsigned int projLoc = glGetUniformLocation(m_shader, "u_Proj");
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &m_view[0][0]);
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, &m_projection[0][0]);
-    const unsigned int mvpLoc = glGetUniformLocation(m_shader, "u_Mvp");
-    glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, &(m_projection * m_view)[0][0]);
 }
 
 void Scene::render(){
-    if (!m_lightSources.size()) {
-        std::cout << "no light source!!\n";
+
+    const std::vector<float>& params = App::getParams();
+
+    if (!params.size())
         return;
-    }
+
+    m_light.setPosition(glm::vec3(params[2], -params[1], params[0]));
+    m_light.setColour(glm::vec3(params[3] / 255, params[4] / 255, params[5] / 255));
+    m_light.setAmbientStrength(params[6]);
+    m_light.setBrightness(params[7]);
+
     const unsigned int lightPosLoc = glGetUniformLocation(m_shader, "u_LightPos");
     const unsigned int lightColourLoc = glGetUniformLocation(m_shader, "u_LightColour");
     const unsigned int brightnessLoc = glGetUniformLocation(m_shader, "u_LightBrightness");
     const unsigned int ambientLoc = glGetUniformLocation(m_shader, "u_AmbientStrength");
 
-    const std::vector<float>& params = App::getParams();
-    const std::vector<ImageFrameData>& imgData = App::getImgData();
+    glUniform3fv(lightPosLoc, 1, &m_light.getPosition()[0]);
+    glUniform3fv(lightColourLoc, 1, &m_light.getColour()[0]);
+    glUniform1f(brightnessLoc, m_light.getBrightness());
+    glUniform1f(ambientLoc, m_light.getAmbientStrength());
 
-    if (!params.size())
+    if (!getObjectCount())
         return;
 
-    m_lightSources[0].setPosition(glm::vec3(params[2], -params[1], params[0]));
-    m_lightSources[0].setColour(glm::vec3(params[3] / 255, params[4] / 255, params[5] / 255));
-
-    glUniform3fv(lightPosLoc, 1, &m_lightSources[0].getPosition()[0]);
-    glUniform3fv(lightColourLoc, 1, &m_lightSources[0].getColour()[0]);
-    glUniform1f(brightnessLoc, m_lightSources[0].getBrightness());
-    glUniform1f(ambientLoc, m_lightSources[0].getAmbientStrength());
+    const std::vector<ImageFrameData>& imgData = App::getImgData();
 
     for (int i = 0; i < m_objects.size(); ++i)
     {
         Object* obj = m_objects[i];
 
-        int ind = (i + 1) * 6;
+        int ind = i * 6 + 8;
 
         // set object position and rotation to values returned by frame parameters
         obj->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
@@ -175,7 +179,6 @@ Object* Scene::addObject(ObjectType type, ObjectArgs args){
     }
 
     m_objects.push_back(obj);
-    m_objNames.push_back(obj->getName());
 
     m_rsScene->addParam(RsFloatParam(args.name + "pos_x", "posX", args.name, args.pos.x, -100, 100, 0.1));
     m_rsScene->addParam(RsFloatParam(args.name + "pos_y", "posY", args.name, args.pos.y, -100, 100, 0.1));
@@ -197,6 +200,8 @@ void Scene::removeObject(Object* obj)
     m_objects.erase(std::remove(m_objects.begin(), m_objects.end(), obj));
 
     m_rsScene->removeParamsForObj(obj);
+    delete obj;
+
     App::getSchema().reloadScene(*m_rsScene);
     App::reloadSchema();
 }
@@ -205,19 +210,18 @@ unsigned int Scene::getShader(){
     return m_shader;
 }
 
-LightSource* Scene::addLightSource(glm::vec3 position, float brightness, float ambientStrength, glm::vec3 colour){
-    LightSource light(position, brightness, ambientStrength, colour);
-    m_lightSources.push_back(light);
-    return &m_lightSources[m_lightSources.size() - 1];
-}
-
-Camera* Scene::addCamera(glm::vec3 pos, float fov) {
-    Camera balls(this);
-    return &balls;
-}
-
 Camera* Scene::getCurrentCamera() {
     return m_currentCamera;
+}
+
+const std::vector<Object*>& Scene::getObjects()
+{
+    return m_objects;
+}
+
+const std::vector<Camera*>& Scene::getCameras()
+{
+    return m_cameras;
 }
 
 int Scene::getObjectCount()
@@ -232,11 +236,6 @@ int Scene::getObjectCount(ObjectType type)
         if (o->getType() == type)
             count++;
     return count;
-}
-
-const char** Scene::getObjectNames()
-{
-    return &m_objNames[0];
 }
 
 Object* Scene::operator [](int i)
