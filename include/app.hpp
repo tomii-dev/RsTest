@@ -58,18 +58,23 @@ struct UiState
 
 struct UpdateQueue
 {
-    std::vector<ObjectConfig> addObjects;
-    std::vector<Object*> removeObjects;
-    std::vector<SceneConfig> scenes;
+    ObjectConfig* addObject;
+    Object* removeObject;
+    SceneConfig* addScene;
     void clear()
     {
-        addObjects.clear();
-        removeObjects.clear();
-        scenes.clear();
+        // do not deallocate the object being removed as this has to be passed to
+        // Scene::removeObject and will then be deallocated
+        delete addObject;
+        delete addScene;
+
+        addObject = nullptr;
+        removeObject = nullptr;
+        addScene = nullptr;
     }
     bool empty()
     {
-        return addObjects.empty() && removeObjects.empty() && scenes.empty();
+        return !addObject && !removeObject && !addScene;
     }
 };
 
