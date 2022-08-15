@@ -55,27 +55,27 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     uniform samplerCube u_CubeMap;
 
     void main(){
-	    vec3 ambient = u_AmbientStrength * u_LightColour;
-	    vec4 norm = normalize(normal);
-	    vec4 texColour;
-	    if (u_IsTextured)
+        vec3 ambient = u_AmbientStrength * u_LightColour;
+        vec4 norm = normalize(normal);
+        vec4 texColour;
+        if (u_IsTextured)
             if(u_ObjectType == 0)
                 texColour = texture(u_CubeMap, cubeMapTexCoord);
             else
-		        texColour = texture(u_Texture, texCoord);
-	    else
-		    texColour = vec4(1, 1, 1, 1);
-	    vec4 lightDir = normalize(vec4(u_LightPos, 1.f) - fragPos);
-	    float diffuseStrength = max(dot(norm, lightDir), 0.0f) * u_LightBrightness;	
-	    vec3 diffuse = diffuseStrength * u_LightColour;
-	    vec3 result = (ambient + diffuse) * u_ObjectColour;
-	    gl_FragColor = vec4(result, 1.0f) * texColour;
+                texColour = texture(u_Texture, texCoord);
+        else
+            texColour = vec4(1, 1, 1, 1);
+        vec4 lightDir = normalize(vec4(u_LightPos, 1.f) - fragPos);
+        float diffuseStrength = max(dot(norm, lightDir), 0.0f) * u_LightBrightness;	
+        vec3 diffuse = diffuseStrength * u_LightColour;
+        vec3 result = (ambient + diffuse) * u_ObjectColour;
+        gl_FragColor = vec4(result, 1.0f) * texColour;
     }
     )src" };
 
     m_shader = utils::createShader(vsSource, fsSource);
 
-	glUseProgram(m_shader);
+    glUseProgram(m_shader);
     utils::checkGLError(" creating shader program");
 
     m_rsScene->name = name;

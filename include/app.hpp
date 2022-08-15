@@ -80,21 +80,21 @@ struct UpdateQueue
 
 class App {
 private:
-	GLFWwindow* m_window;
+    GLFWwindow* m_window;
     GLFWwindow* m_uiWindow;
     Metrics m_metrics;
     Config m_config;
     FrameInfo m_frameInfo;
-	float m_windowWidth;
-	float m_windowHeight;
+    float m_windowWidth;
+    float m_windowHeight;
     std::vector<Scene*> m_scenes;
-	Scene* m_currentScene;
-	static App* s_instance;
-	HMODULE m_rsLib;
-	TargetMap m_targets;
-	FrameData m_frame;
+    Scene* m_currentScene;
+    static App* s_instance;
+    HMODULE m_rsLib;
+    TargetMap m_targets;
+    FrameData m_frame;
     RsSchema m_schema;
-	const StreamDescriptions* m_header;
+    const StreamDescriptions* m_header;
     UiState m_uiState;
     UpdateQueue m_updateQueue;
     std::vector<uint8_t> m_desc;
@@ -102,18 +102,18 @@ private:
     std::vector<ImageFrameData> m_imgData;
     uint64_t m_hash;
     int loadRenderStream();
-	int handleStreams();
-	int sendFrames();
+    int handleStreams();
+    int sendFrames();
     void measureFps();
     void renderUi();
 public:
-	App();
-	int run();
-	float getWindowWidth();
-	float getWindowHeight();
-	void setWindowWidth(float width);
-	void setWindowHeight(float height);
-	static App* getInstance();
+    App();
+    int run();
+    float getWindowWidth();
+    float getWindowHeight();
+    void setWindowWidth(float width);
+    void setWindowHeight(float height);
+    static App* getInstance();
     static RsSchema& getSchema();
     static const std::vector<float>& getParams();
     static const std::vector<ImageFrameData>& getImgData();
