@@ -6,6 +6,7 @@
 
 #include "lightsource.hpp"
 #include "scene.hpp"
+#include "utils.hpp"
 
 #include "d3/d3renderstream.h"
 
@@ -17,9 +18,9 @@ struct Texture
     GLenum target;
 };
 
-class Object{
-protected:
-    ObjectType m_type;
+class Object
+{
+private:
     std::string m_name;
     glm::vec3 m_position;
     glm::vec3 m_size;
@@ -28,7 +29,9 @@ protected:
     glm::mat4 m_rotation;
     Texture m_texture;
     glm::vec2 m_lastTexSize;
-    virtual void init();
+protected:
+    ObjectType m_type;
+    VertexArray m_vao;
 public:
     Object(const char* name);
     Object(Scene* scene, glm::vec3 pos, glm::vec3 size, const std::string& name);
