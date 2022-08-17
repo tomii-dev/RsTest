@@ -323,3 +323,68 @@ RsTextureParam::RsTextureParam(const std::string& key, const std::string& displa
     dmxType                         = RS_DMX_16_BE;
     flags                           = REMOTEPARAMETER_NO_FLAGS;
 }
+
+VertexArray::VertexArray()
+{
+    glGenVertexArrays(1, &m_vao);
+    glGenBuffers(1, &m_vbo);
+    glGenBuffers(1, &m_ibo);
+}
+
+VertexArray::~VertexArray()
+{
+    glDeleteVertexArrays(1, &m_vao);
+    glDeleteBuffers(1, &m_vbo);
+    glDeleteBuffers(1, &m_ibo);
+}
+
+void VertexArray::addVertex(v3 position, v2 texCoord, v3 normal)
+{
+    for (int i = 0; i < 3; ++i)
+        m_vertices.push_back(position[i]);
+
+    m_vertices.push_back(texCoord.x);
+    m_vertices.push_back(texCoord.y);
+
+    for (int i = 0; i < 3; ++i)
+        m_vertices.push_back(normal[i]);
+}
+
+void VertexArray::addIndex(unsigned int ind) 
+{ 
+    m_indices.push_back(ind); 
+}
+
+void VertexArray::setIndices(const std::vector<unsigned int>& indices) 
+{ 
+    m_indices = indices;
+}
+
+void VertexArray::bind() { glBindVertexArray(m_vao); }
+
+void VertexArray::build()
+{
+    bind();
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_vertices.size(), &m_vertices[0], GL_STATIC_DRAW);
+
+    // set up position attrib
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, 0);
+
+    // set up tex coord attrib
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (const void*)12);
+
+    // set up normal attrib
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (const void*)20);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * m_indices.size(), &m_indices[0], GL_STATIC_DRAW);
+}
+
+size_t VertexArray::getIndexCount()
+{
+    return m_indices.size();
+}

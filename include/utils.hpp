@@ -21,6 +21,9 @@
 
 #define STR( name ) # name
 
+typedef glm::vec2 v2;
+typedef glm::vec3 v3;
+
 class Object;
 
 struct RenderTarget {
@@ -74,6 +77,28 @@ class RsTextureParam : public RemoteParameter
 public:
     RsTextureParam(const std::string& key, const std::string& display,
         const std::string& group);
+};
+
+class VertexArray
+{
+private:
+    unsigned int m_vao;
+    unsigned int m_vbo;
+    unsigned int m_ibo;
+    std::vector<float> m_vertices;
+    std::vector<unsigned int> m_indices;
+public:
+    VertexArray();
+    ~VertexArray();
+    void addVertex(v3 position, v2 texCoord, v3 normal);
+    void addIndex(unsigned int ind);
+    void setIndices(const std::vector<unsigned int>& indices);
+    void bind();
+
+    // take all information and generate buffers for GL
+    void build();
+
+    size_t getIndexCount();
 };
 
 namespace utils {
