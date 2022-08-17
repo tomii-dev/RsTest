@@ -16,14 +16,13 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
                                  m_light        (glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1)
 {
     const GLchar* vsSource[] = {R"src(#version 330 core
-    in vec4 a_Position;
-    in vec4 a_Normal;
-    in vec2 a_TexCoord;
+    layout (location = 0) in vec4 a_Position;
+    layout (location = 1) in vec2 a_TexCoord;
+    layout (location = 2) in vec4 a_Normal;
 
     out vec4 fragPos;
     out vec4 normal;
     out vec2 texCoord;
-    out vec3 cubeMapTexCoord;
 
     uniform mat4 u_Model;
     uniform mat4 u_View;
@@ -32,8 +31,7 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     void main() {
         fragPos = u_Model * a_Position;
         normal = u_Model * a_Normal;
-        texCoord = a_TexCoord;
-        cubeMapTexCoord = vec3(a_Position);
+        texCoord = vec2(1, 1) - a_TexCoord;
         gl_Position = u_Proj * u_View * fragPos;
     }
     )src" };
@@ -42,13 +40,10 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     in vec4 fragPos;
     in vec4 normal;
     in vec2 texCoord;
-    in vec3 cubeMapTexCoord;
 
     uniform vec3 u_LightPos;
     uniform vec3 u_LightColour;
     uniform float u_LightBrightness;
-    uniform int u_ObjectType;
-    uniform vec3 u_ObjectColour;
     uniform float u_AmbientStrength;
     uniform bool u_IsTextured;
     uniform sampler2D u_Texture;
@@ -59,16 +54,13 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
         vec4 norm = normalize(normal);
         vec4 texColour;
         if (u_IsTextured)
-            if(u_ObjectType == 0)
-                texColour = texture(u_CubeMap, cubeMapTexCoord);
-            else
-                texColour = texture(u_Texture, texCoord);
+            texColour = texture(u_Texture, texCoord);
         else
             texColour = vec4(1, 1, 1, 1);
         vec4 lightDir = normalize(vec4(u_LightPos, 1.f) - fragPos);
         float diffuseStrength = max(dot(norm, lightDir), 0.0f) * u_LightBrightness;	
         vec3 diffuse = diffuseStrength * u_LightColour;
-        vec3 result = (ambient + diffuse) * u_ObjectColour;
+        vec3 result = ambient + diffuse;
         gl_FragColor = vec4(result, 1.0f) * texColour;
     }
     )src" };
@@ -84,9 +76,10 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     m_rsScene->addParam(RsFloatParam("lightpos_x", "posX", "light", 0, -100, 100, 0.1));
     m_rsScene->addParam(RsFloatParam("lightpos_y", "posY", "light", 5, -100, 100, 0.1));
     m_rsScene->addParam(RsFloatParam("lightpos_z", "posZ", "light", 0, -100, 100, 0.1));
-    m_rsScene->addParam(RsFloatParam("lightcol_r", "colR", "light", 255, 0, 255, 1));
-    m_rsScene->addParam(RsFloatParam("lightcol_g", "colG", "light", 255, 0, 255, 1));
-    m_rsScene->addParam(RsFloatParam("lightcol_b", "colB", "light", 255, 0, 255, 1));
+    m_rsScene->addParam(RsFloatParam("lightcol_r", "light_r", "light", 1, 0, 1, .01));
+    m_rsScene->addParam(RsFloatParam("lightcol_g", "light_g", "light", 1, 0, 1, .01));
+    m_rsScene->addParam(RsFloatParam("lightcol_b", "light_b", "light", 1, 0, 1, .01));
+    m_rsScene->addParam(RsFloatParam("lightcol_a", "light_a", "light", 1, 0, 1, .01));
     m_rsScene->addParam(RsFloatParam("amb_strength", "ambient strength", "light", .4, 0, .5, 0.05));
     m_rsScene->addParam(RsFloatParam("brightness", "brightness", "light", 1, 0, 2, 0.1));
 
@@ -124,9 +117,9 @@ void Scene::render(){
         return;
 
     m_light.setPosition(glm::vec3(params[2], -params[1], params[0]));
-    m_light.setColour(glm::vec3(params[3] / 255, params[4] / 255, params[5] / 255));
-    m_light.setAmbientStrength(params[6]);
-    m_light.setBrightness(params[7]);
+    m_light.setColour(glm::vec3(params[3], params[4], params[5]));
+    m_light.setAmbientStrength(params[7]);
+    m_light.setBrightness(params[8]);
 
     const unsigned int lightPosLoc = glGetUniformLocation(m_shader, "u_LightPos");
     const unsigned int lightColourLoc = glGetUniformLocation(m_shader, "u_LightColour");
@@ -147,7 +140,7 @@ void Scene::render(){
     {
         Object* obj = m_objects[i];
 
-        int ind = i * 6 + 8;
+        int ind = i * 6 + 9;
 
         // set object position and rotation to values returned by frame parameters
         obj->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
