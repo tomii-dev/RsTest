@@ -46,14 +46,14 @@ void Object::update(const ImageFrameData& imgData)
 {
     m_vao.bind();
 
-    const GLint modelLoc = glGetUniformLocation(m_scene->getShader(), "u_Model");
+    const GLint modelLoc = glGetUniformLocation(m_scene->getShader(), "uModel");
     m_model = glm::translate(glm::mat4(1.0f), m_position)
         * m_rotation
         * glm::scale(glm::mat4(1.0f), m_size);
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &m_model[0][0]);
 
     // bind and set texture
-    const GLint isTexLoc = glGetUniformLocation(m_scene->getShader(), "u_IsTextured");
+    const GLint isTexLoc = glGetUniformLocation(m_scene->getShader(), "uIsTextured");
 
     const glm::vec2 size(imgData.width, imgData.height);
 
@@ -86,7 +86,7 @@ void Object::update(const ImageFrameData& imgData)
     data.gl.texture = m_texture.id;
     if (utils::rsGetFrameImage(imgData.imageId, RS_FRAMETYPE_OPENGL_TEXTURE, data))
         utils::logToD3("failed to get texture param info");
-    const GLint texLoc = glGetUniformLocation(m_scene->getShader(), "u_Texture");
+    const GLint texLoc = glGetUniformLocation(m_scene->getShader(), "uTexture");
     glUniform1i(texLoc, 0);
 
     m_lastTexSize = size;
