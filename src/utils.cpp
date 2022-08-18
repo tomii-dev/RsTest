@@ -215,6 +215,13 @@ namespace utils {
             return "GL_UNSIGNED_SHORT";
         }
     }
+
+    void lowerStr(std::string& str)
+    {
+        std::for_each(str.begin(), str.end(), [](char& c) {
+            c = tolower(c);
+        });
+    }
 }
 
 RsSchema::RsSchema() 
