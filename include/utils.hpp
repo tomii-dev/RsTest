@@ -8,6 +8,7 @@
 #include <GL/GLU.h>
 #endif
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
 #include <d3/d3renderstream.h>
@@ -23,6 +24,7 @@
 
 typedef glm::vec2 v2;
 typedef glm::vec3 v3;
+typedef glm::vec4 v4;
 
 class Object;
 
@@ -139,4 +141,5 @@ namespace utils {
     const char* glInternalFormatStr(GLint format);
     const char* glFormatStr(GLint format);
     const char* glTypeStr(GLenum type);
+    void lowerStr(std::string& str);
 }
