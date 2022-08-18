@@ -32,6 +32,7 @@ struct ObjectArgs {
 
 class Scene {
 private:
+    const char* m_name;
     Camera* m_currentCamera;
     unsigned int m_shader;
     glm::mat4 m_view;
@@ -40,6 +41,8 @@ private:
     LightSource m_light;
     std::vector<Camera*> m_cameras;
     RsScene* m_rsScene;
+    float m_ambStrength;
+    glm::vec4 m_ambColour;
 public:
     Scene(const char* name);
     ~Scene();
