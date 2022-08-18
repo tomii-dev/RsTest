@@ -13,7 +13,8 @@
 
 Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1))),
                                  m_rsScene      (new RsScene()),
-                                 m_light        (glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, VEC1)
+                                 m_light        (glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, v4(1.f)),
+                                 m_name         (name)
 {
     const GLchar* vsSource[] = {R"src(#version 330 core
     layout (location = 0) in vec4 aPosition;
@@ -42,15 +43,15 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     in vec2 texCoord;
 
     uniform vec3 uLightPos;
-    uniform vec3 uLightColour;
+    uniform vec4 uLightColour;
     uniform float uLightBrightness;
-    uniform float uAmbientColour;
+    uniform vec4 uAmbientColour;
     uniform float uAmbientStrength;
     uniform bool uIsTextured;
     uniform sampler2D uTexture;
 
     void main(){
-        vec3 ambient = uAmbientStrength * uAmbientColour;
+        vec4 ambient = uAmbientStrength * uAmbientColour;
         vec4 norm = normalize(normal);
         vec4 texColour;
         if (uIsTextured)
@@ -59,9 +60,9 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
             texColour = vec4(1, 1, 1, 1);
         vec4 lightDir = normalize(vec4(uLightPos, 1.f) - fragPos);
         float diffuseStrength = max(dot(norm, lightDir), 0.0f) * uLightBrightness;	
-        vec3 diffuse = diffuseStrength * uLightColour;
-        vec3 result = ambient + diffuse;
-        gl_FragColor = vec4(result, 1.0f) * texColour;
+        vec4 diffuse = diffuseStrength * uLightColour;
+        vec4 result = ambient + diffuse;
+        gl_FragColor = result * texColour;
     }
     )src" };
 
@@ -72,16 +73,22 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
 
     m_rsScene->name = name;
 
-    // Parameters for scene light
-    m_rsScene->addParam(RsFloatParam("lightpos_x", "pos_x", "light", 0, -100, 100, 0.1));
-    m_rsScene->addParam(RsFloatParam("lightpos_y", "pos_y", "light", 5, -100, 100, 0.1));
-    m_rsScene->addParam(RsFloatParam("lightpos_z", "pos_z", "light", 0, -100, 100, 0.1));
-    m_rsScene->addParam(RsFloatParam("lightcol_r", "light_r", "light", 1, 0, 1, .01));
-    m_rsScene->addParam(RsFloatParam("lightcol_g", "light_g", "light", 1, 0, 1, .01));
-    m_rsScene->addParam(RsFloatParam("lightcol_b", "light_b", "light", 1, 0, 1, .01));
-    m_rsScene->addParam(RsFloatParam("lightcol_a", "light_a", "light", 1, 0, 1, .01));
-    m_rsScene->addParam(RsFloatParam("amb_strength", "ambient strength", "light", .4, 0, 1, 0.05));
-    m_rsScene->addParam(RsFloatParam("brightness", "brightness", "light", 1, 0, 2, 0.1));
+    // ambient light params
+    m_rsScene->addParam(RsFloatParam("amb_strength", "ambient strength", "scene", .4, 0, 1, 0.05)); // 0
+    m_rsScene->addParam(RsFloatParam("ambcol_r", "ambient colour_r", "scene", 1, 0, 1, .01)); // 1
+    m_rsScene->addParam(RsFloatParam("ambcol_g", "ambient colour_g", "scene", 1, 0, 1, .01)); // 2
+    m_rsScene->addParam(RsFloatParam("ambcol_b", "ambient colour_b", "scene", 1, 0, 1, .01)); // 3
+    m_rsScene->addParam(RsFloatParam("ambcol_a", "ambientcolour_a", "scene", 1, 0, 1, .01)); // 4
+
+    // parameters for scene light
+    m_rsScene->addParam(RsFloatParam("lightpos_x", "pos_x", "light", 0, -100, 100, 0.1)); // 5
+    m_rsScene->addParam(RsFloatParam("lightpos_y", "pos_y", "light", 5, -100, 100, 0.1)); // 6
+    m_rsScene->addParam(RsFloatParam("lightpos_z", "pos_z", "light", 0, -100, 100, 0.1)); // 7
+    m_rsScene->addParam(RsFloatParam("lightcol_r", "light colour_r", "light", 1, 0, 1, .01)); // 8
+    m_rsScene->addParam(RsFloatParam("lightcol_g", "light colour_g", "light", 1, 0, 1, .01)); // 9
+    m_rsScene->addParam(RsFloatParam("lightcol_b", "light colour_b", "light", 1, 0, 1, .01)); // 10
+    m_rsScene->addParam(RsFloatParam("lightcol_a", "light colour_a", "light", 1, 0, 1, .01)); // 11
+    m_rsScene->addParam(RsFloatParam("brightness", "brightness", "light", 1, 0, 2, 0.1)); // 12
 
     App::getSchema().addScene(*m_rsScene);
     App::reloadSchema();
@@ -116,20 +123,24 @@ void Scene::render(){
     if (!params.size())
         return;
 
-    m_light.setPosition(glm::vec3(params[2], -params[1], params[0]));
-    m_light.setColour(glm::vec3(params[3], params[4], params[5]));
-    m_light.setAmbientStrength(params[7]);
-    m_light.setBrightness(params[8]);
+    m_ambStrength = params[0];
+    m_ambColour = v4(params[1], params[2], params[3], params[4]);
 
+    m_light.setPosition(v3(params[7], -params[6], params[5]));
+    m_light.setColour(v4(params[8], params[9], params[10], params[11]));
+    m_light.setBrightness(params[12]);
+
+    const unsigned int ambientStrenLoc = glGetUniformLocation(m_shader, "uAmbientStrength");
+    const unsigned int ambientColLoc = glGetUniformLocation(m_shader, "uAmbientColour");
     const unsigned int lightPosLoc = glGetUniformLocation(m_shader, "uLightPos");
     const unsigned int lightColourLoc = glGetUniformLocation(m_shader, "uLightColour");
     const unsigned int brightnessLoc = glGetUniformLocation(m_shader, "uLightBrightness");
-    const unsigned int ambientLoc = glGetUniformLocation(m_shader, "uAmbientStrength");
 
+    glUniform1f(ambientStrenLoc, m_ambStrength);
+    glUniform4fv(ambientColLoc, 1, &m_ambColour[0]);
     glUniform3fv(lightPosLoc, 1, &m_light.getPosition()[0]);
-    glUniform3fv(lightColourLoc, 1, &m_light.getColour()[0]);
+    glUniform4fv(lightColourLoc, 1, &m_light.getColour()[0]);
     glUniform1f(brightnessLoc, m_light.getBrightness());
-    glUniform1f(ambientLoc, m_light.getAmbientStrength());
 
     if (!getObjectCount())
         return;
@@ -140,12 +151,12 @@ void Scene::render(){
     {
         Object* obj = m_objects[i];
 
-        int ind = i * 6 + 9;
+        int ind = i * 9 + 13;
 
-        // set object position and rotation to values returned by frame parameters
+        // set object position, rotation, scale to values returned by frame parameters
         obj->setPosition(glm::vec3(params[ind + 2], -params[ind + 1], params[ind]));
         obj->setRotation(-params[ind + 5], params[ind + 3], -params[ind + 4]);
-
+        obj->setSize(v3(params[ind + 6], params[ind + 7], params[ind + 8]));
         obj->update(imgData[i]);
 
         obj->draw();
@@ -157,9 +168,11 @@ Object* Scene::addObject(ObjectType type, ObjectArgs args){
 
     if (args.name == "")
     {
-        args.name = objectTypes[type];
-        args.name += " ";
-        args.name += std::to_string(getObjectCount(type));
+        std::string objName = objectTypes[type];
+        utils::lowerStr(objName);
+
+        args.name = objName + " ";
+        args.name += std::to_string(getObjectCount(type) + 1);
     }
 
     switch(type){
@@ -173,14 +186,20 @@ Object* Scene::addObject(ObjectType type, ObjectArgs args){
 
     m_objects.push_back(obj);
 
-    m_rsScene->addParam(RsFloatParam(args.name + "pos_x", "pos_x", args.name, args.pos.x, -100, 100, 0.1));
-    m_rsScene->addParam(RsFloatParam(args.name + "pos_y", "pos_y", args.name, args.pos.y, -100, 100, 0.1));
-    m_rsScene->addParam(RsFloatParam(args.name + "pos_z", "pos_z", args.name, args.pos.z, -100, 100, 0.1));
-    m_rsScene->addParam(RsFloatParam(args.name + "rot_x", "rot_x", args.name, 0, 0, 359, 1));
-    m_rsScene->addParam(RsFloatParam(args.name + "rot_y", "rot_y", args.name, 0, 0, 359, 1));
-    m_rsScene->addParam(RsFloatParam(args.name + "rot_z", "rot_z", args.name, 0, 0, 359, 1));
+    // use prefix to identify object by its scene and name
+    const std::string prefix = m_name + args.name;
 
-    m_rsScene->addParam(RsTextureParam(args.name + "texture", "texture", args.name));
+    m_rsScene->addParam(RsFloatParam(prefix + "pos_x", "pos_x", args.name, args.pos.x, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam(prefix + "pos_y", "pos_y", args.name, args.pos.y, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam(prefix + "pos_z", "pos_z", args.name, args.pos.z, -100, 100, 0.1));
+    m_rsScene->addParam(RsFloatParam(prefix + "rot_x", "rot_x", args.name, 0, 0, 359, 1));
+    m_rsScene->addParam(RsFloatParam(prefix + "rot_y", "rot_y", args.name, 0, 0, 359, 1));
+    m_rsScene->addParam(RsFloatParam(prefix + "rot_z", "rot_z", args.name, 0, 0, 359, 1));
+    m_rsScene->addParam(RsFloatParam(prefix + "scale_x", "scale_x", args.name, 1, 0, 10, .01));
+    m_rsScene->addParam(RsFloatParam(prefix + "scale_y", "scale_y", args.name, 1, 0, 10, .01));
+    m_rsScene->addParam(RsFloatParam(prefix + "scale_z", "scale_z", args.name, 1, 0, 10, .01));
+
+    m_rsScene->addParam(RsTextureParam(prefix + "texture", "texture", args.name));
 
     App::getSchema().reloadScene(*m_rsScene);
     App::reloadSchema();
