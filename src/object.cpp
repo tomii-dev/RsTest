@@ -27,14 +27,14 @@ void Object::setPosition(glm::vec3 pos)
     m_position = pos;
 }
 
-float Object::getSize() 
+glm::vec3 Object::getSize()
 {
-    return m_size.x;
+    return m_size;
 }
 
-void Object::setSize(float size) 
+void Object::setSize(glm::vec3 size) 
 {
-    m_size = glm::vec3(size);
+    m_size = size;
 }
 
 void Object::setRotation(float x, float y, float z)

@@ -41,9 +41,9 @@ public:
     void rotate(float deg, glm::vec3 dir);
     glm::vec3 getPosition();
     void setPosition(glm::vec3 pos);
-    float getSize();
+    glm::vec3 getSize();
     ObjectType getType();
-    void setSize(float size);
+    void setSize(glm::vec3 size);
     void setRotation(float x, float y, float z);
     const char* getName();
 };
