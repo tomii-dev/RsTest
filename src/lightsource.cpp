@@ -2,10 +2,9 @@
 
 #include "object.hpp"
 
-LightSource::LightSource(glm::vec3 position, float brightness, float ambientStrength, glm::vec3 colour, Object* obj)
+LightSource::LightSource(glm::vec3 position, float brightness, float ambientStrength, glm::vec4 colour, Object* obj)
     : m_position        (position), 
     m_brightness        (brightness),
-    m_ambientStrength   (ambientStrength),
     m_colour            (colour),
     m_obj               (obj)
 {}
@@ -40,22 +39,12 @@ void LightSource::setPosition(glm::vec3 position)
         m_obj->setPosition(position);
 }
 
-glm::vec3 LightSource::getColour()
+glm::vec4 LightSource::getColour()
 {
     return m_colour;
 }
 
-void LightSource::setColour(glm::vec3 colour)
+void LightSource::setColour(glm::vec4 colour)
 {
     m_colour = colour;
-}
-
-float LightSource::getAmbientStrength() 
-{
-    return m_ambientStrength;
-}
-
-void LightSource::setAmbientStrength(float strength)
-{
-    m_ambientStrength = strength;
 }
