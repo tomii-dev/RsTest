@@ -289,6 +289,8 @@ void App::renderUi()
                 m_updateQueue.removeObject = obj;
                 m_uiState.remObjectWinOpen = false;
             }
+            if (ImGui::Button("Close"))
+                m_uiState.remObjectWinOpen = false;
             ImGui::End();
         }
     }
@@ -314,6 +316,8 @@ void App::renderUi()
             m_uiState.addObjectWinOpen = false;
             m_updateQueue.addObject = new ObjectConfig(obj);
         }
+        if (ImGui::Button("Close"))
+            m_uiState.addObjectWinOpen = false;
         ImGui::End();
     }
 
@@ -331,6 +335,8 @@ void App::renderUi()
             m_updateQueue.addScene = new SceneConfig(scene);
             scene = SceneConfig();
         }
+        if (ImGui::Button("Close"))
+            m_uiState.newSceneWinOpen = false;
         ImGui::End();
     }
 
