@@ -85,7 +85,7 @@ void Object::update(const ImageFrameData& imgData)
     SenderFrameTypeData data;
     data.gl.texture = m_texture.id;
     if (utils::rsGetFrameImage(imgData.imageId, RS_FRAMETYPE_OPENGL_TEXTURE, data))
-        utils::logToD3("failed to get texture param info");
+        utils::logToD3(MSG(failed to get texture param info));
     const GLint texLoc = glGetUniformLocation(m_scene->getShader(), "uTexture");
     glUniform1i(texLoc, 0);
 
