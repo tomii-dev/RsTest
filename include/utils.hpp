@@ -20,7 +20,7 @@
 
 #define PI 3.1415926535897932384626433832795028841
 
-#define STR( name ) # name
+#define MSG(str) "[RsTest] " #str
 
 typedef glm::vec2 v2;
 typedef glm::vec3 v3;
