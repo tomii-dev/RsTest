@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <shlwapi.h>
+#include <shlobj.h>
 #include <tchar.h>
 #include <GLFW/glfw3native.h>
 #include <d3/d3renderstream.h>
@@ -196,7 +197,7 @@ int App::sendFrames()
                     m_imgData.resize(objCount);
 
                 if (utils::rsGetFrameImageData(rsScene.hash, m_imgData.data(), m_imgData.size()))
-                    utils::logToD3("failed to get image param data");
+                    utils::logToD3(MSG(failed to get image param data));
 
                 if (m_params.size() != rsScene.nParameters)
                     m_params.resize(rsScene.nParameters);
@@ -406,10 +407,27 @@ int App::run()
     if (!m_uiWindow)
         utils::error("failed to create ui window :(");
     glfwSetWindowSizeLimits(m_uiWindow, minW, minH, maxW, maxH);
-    GLFWimage img;
-    img.pixels = stbi_load("C:/Program Files/RsTest/img/icon.png", &img.width, &img.height, 0, 4);
-    glfwSetWindowIcon(m_uiWindow, 1, &img);
-    stbi_image_free(img.pixels);
+
+    // find documents folder, where icon for ui window should be stored
+    wchar_t lDocPath[MAX_PATH];
+    HRESULT res = SHGetFolderPath(NULL, CSIDL_MYDOCUMENTS, NULL, SHGFP_TYPE_CURRENT, lDocPath);
+    if (res == S_OK)
+    {
+        PathAppend(lDocPath, L"RsTest\\img\\icon.png");
+
+        char iconPath[MAX_PATH];
+
+        // wide char str to char*
+        wcstombs(iconPath, lDocPath, MAX_PATH);
+
+        utils::logToD3(iconPath);
+
+        GLFWimage img;
+        img.pixels = stbi_load(iconPath, &img.width, &img.height, 0, 4);
+        glfwSetWindowIcon(m_uiWindow, 1, &img);
+        stbi_image_free(img.pixels);
+    }
+    else utils::logToD3(MSG(could not find my program folder... did you get me from the installer?));
 
     // hide window and set it to be current opengl context
     glfwHideWindow(m_window);
