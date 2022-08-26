@@ -73,22 +73,24 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
 
     m_rsScene->name = name;
 
+    const std::string nameStr(name);
+
     // ambient light params
-    m_rsScene->addParam(RsFloatParam("amb_strength", "ambient strength", "scene", .4, 0, 1, 0.05)); // 0
-    m_rsScene->addParam(RsFloatParam("ambcol_r", "ambient colour_r", "scene", 1, 0, 1, .01)); // 1
-    m_rsScene->addParam(RsFloatParam("ambcol_g", "ambient colour_g", "scene", 1, 0, 1, .01)); // 2
-    m_rsScene->addParam(RsFloatParam("ambcol_b", "ambient colour_b", "scene", 1, 0, 1, .01)); // 3
-    m_rsScene->addParam(RsFloatParam("ambcol_a", "ambientcolour_a", "scene", 1, 0, 1, .01)); // 4
+    m_rsScene->addParam(RsFloatParam(nameStr + "amb_strength", "ambient strength", "scene", .4, 0, 1, 0.05)); // 0
+    m_rsScene->addParam(RsFloatParam(nameStr + "ambcol_r", "ambient colour_r", "scene", 1, 0, 1, .01)); // 1
+    m_rsScene->addParam(RsFloatParam(nameStr + "ambcol_g", "ambient colour_g", "scene", 1, 0, 1, .01)); // 2
+    m_rsScene->addParam(RsFloatParam(nameStr + "ambcol_b", "ambient colour_b", "scene", 1, 0, 1, .01)); // 3
+    m_rsScene->addParam(RsFloatParam(nameStr + "ambcol_a", "ambientcolour_a", "scene", 1, 0, 1, .01)); // 4
 
     // parameters for scene light
-    m_rsScene->addParam(RsFloatParam("lightpos_x", "pos_x", "light", 0, -100, 100, 0.1)); // 5
-    m_rsScene->addParam(RsFloatParam("lightpos_y", "pos_y", "light", 5, -100, 100, 0.1)); // 6
-    m_rsScene->addParam(RsFloatParam("lightpos_z", "pos_z", "light", 0, -100, 100, 0.1)); // 7
-    m_rsScene->addParam(RsFloatParam("lightcol_r", "light colour_r", "light", 1, 0, 1, .01)); // 8
-    m_rsScene->addParam(RsFloatParam("lightcol_g", "light colour_g", "light", 1, 0, 1, .01)); // 9
-    m_rsScene->addParam(RsFloatParam("lightcol_b", "light colour_b", "light", 1, 0, 1, .01)); // 10
-    m_rsScene->addParam(RsFloatParam("lightcol_a", "light colour_a", "light", 1, 0, 1, .01)); // 11
-    m_rsScene->addParam(RsFloatParam("brightness", "brightness", "light", 1, 0, 2, 0.1)); // 12
+    m_rsScene->addParam(RsFloatParam(nameStr + "lightpos_x", "pos_x", "light", 0, -100, 100, 0.1)); // 5
+    m_rsScene->addParam(RsFloatParam(nameStr + "lightpos_y", "pos_y", "light", 5, -100, 100, 0.1)); // 6
+    m_rsScene->addParam(RsFloatParam(nameStr + "lightpos_z", "pos_z", "light", 0, -100, 100, 0.1)); // 7
+    m_rsScene->addParam(RsFloatParam(nameStr + "lightcol_r", "light colour_r", "light", 1, 0, 1, .01)); // 8
+    m_rsScene->addParam(RsFloatParam(nameStr + "lightcol_g", "light colour_g", "light", 1, 0, 1, .01)); // 9
+    m_rsScene->addParam(RsFloatParam(nameStr + "lightcol_b", "light colour_b", "light", 1, 0, 1, .01)); // 10
+    m_rsScene->addParam(RsFloatParam(nameStr + "lightcol_a", "light colour_a", "light", 1, 0, 1, .01)); // 11
+    m_rsScene->addParam(RsFloatParam(nameStr + "brightness", "brightness", "light", 1, 0, 2, 0.1)); // 12
 
     App::getSchema().addScene(*m_rsScene);
     App::reloadSchema();
