@@ -18,7 +18,7 @@ namespace utils {
 
     decltype(rs_initialiseGpGpuWithOpenGlContexts)* rsInitialiseGpuOpenGl;
     decltype(rs_getStreams)* rsGetStreams;
-    decltype(rs_sendFrame)* rsSendFrame;
+    decltype(rs_sendFrame2)* rsSendFrame;
     decltype(rs_getFrameCamera)* rsGetFrameCamera;
     decltype(rs_awaitFrameData)* rsAwaitFrameData;
     decltype(rs_logToD3)* logToD3;
@@ -26,7 +26,7 @@ namespace utils {
     decltype(rs_setSchema)* rsSetSchema;
     decltype(rs_getFrameParameters)* rsGetFrameParams;
     decltype(rs_getFrameImageData)* rsGetFrameImageData;
-    decltype(rs_getFrameImage)* rsGetFrameImage;
+    decltype(rs_getFrameImage2)* rsGetFrameImage;
 
     const std::string rsErrorStrs[] = {
            "RS_ERROR_SUCCESS",
@@ -51,8 +51,7 @@ namespace utils {
     int error(const std::string& msg)
     {
         if (logToD3) logToD3(msg.c_str());
-        const std::wstring wStr = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(msg);
-        MessageBox(NULL, wStr.c_str(), L"RsTest Error :(", MB_OK);
+        MessageBoxA(NULL, msg.c_str(), "RsTest Error :(", MB_OK);
         return 1;
     }
 

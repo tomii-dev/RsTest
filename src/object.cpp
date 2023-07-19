@@ -82,9 +82,10 @@ void Object::update(const ImageFrameData& imgData)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, imgData.width, imgData.height, 0, format, type, nullptr);
 
-    SenderFrameTypeData data;
+    SenderFrame data;
+    data.type = RS_FRAMETYPE_OPENGL_TEXTURE;
     data.gl.texture = m_texture.id;
-    if (utils::rsGetFrameImage(imgData.imageId, RS_FRAMETYPE_OPENGL_TEXTURE, data))
+    if (utils::rsGetFrameImage(imgData.imageId, &data))
         utils::logToD3(MSG(failed to get texture param info));
     const GLint texLoc = glGetUniformLocation(m_scene->getShader(), "uTexture");
     glUniform1i(texLoc, 0);

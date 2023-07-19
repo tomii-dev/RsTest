@@ -47,26 +47,32 @@ struct Config
 
 struct UiState
 {
-    bool addObjectWinOpen;
-    bool remObjectWinOpen;
-    bool newSceneWinOpen;
+    bool addObjectWinOpen = false;
+    bool remObjectWinOpen = false;
+    bool newSceneWinOpen = false;
     ObjectConfig currentAddObj;
-    int currentRemObj;
+    int currentRemObj = 0;
     SceneConfig currentScene;
-    bool exit;
+    bool exit = false;
 };
 
 struct UpdateQueue
 {
-    ObjectConfig* addObject;
-    Object* removeObject;
-    SceneConfig* addScene;
+    ObjectConfig* addObject = nullptr;
+    Object* removeObject = nullptr;
+    SceneConfig* addScene = nullptr;
     void clear()
     {
         // do not deallocate the object being removed as this has to be passed to
         // Scene::removeObject and will then be deallocated
-        delete addObject;
-        delete addScene;
+        if (addObject != nullptr)
+        {
+            delete addObject;
+        }
+        if (addScene != nullptr)
+        {
+            delete addScene;
+        }
 
         addObject = nullptr;
         removeObject = nullptr;
@@ -87,7 +93,7 @@ private:
     FrameInfo m_frameInfo;
     float m_windowWidth;
     float m_windowHeight;
-    std::vector<Scene*> m_scenes;
+    std::vector<Scene> m_scenes;
     Scene* m_currentScene;
     static App* s_instance;
     HMODULE m_rsLib;

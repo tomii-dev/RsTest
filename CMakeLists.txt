@@ -52,11 +52,14 @@ add_executable(${PROJECT_NAME}
 add_subdirectory(external/glfw)
 
 target_include_directories(${PROJECT_NAME}
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/d3/include
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-    PUBLIC external/glfw/include
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
     PUBLIC ${GLEW_DIR}/include
-    PUBLIC external/glm
-    PUBLIC external/imgui
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/glm
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
 )
 
 target_link_directories(${PROJECT_NAME}

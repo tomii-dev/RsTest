@@ -11,7 +11,7 @@
 #include "utils.hpp"
 #include "app.hpp"
 
-Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1))),
+Scene::Scene(std::string name) : m_currentCamera(new Camera(this, glm::vec3(-10, 0, -1))),
                                  m_rsScene      (new RsScene()),
                                  m_light        (glm::vec3(20.f, -15.f, 0.f), 1.f, .4f, v4(1.f)),
                                  m_name         (name)
@@ -71,7 +71,7 @@ Scene::Scene(const char* name) : m_currentCamera(new Camera(this, glm::vec3(-10,
     glUseProgram(m_shader);
     utils::checkGLError(" creating shader program");
 
-    m_rsScene->name = name;
+    m_rsScene->name = m_name.c_str();
 
     const std::string nameStr(name);
 
