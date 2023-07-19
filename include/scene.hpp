@@ -9,8 +9,12 @@
 #include "utils.hpp"
 #include "lightsource.hpp"
 
+#if !defined(VEC0)
 #define VEC0 glm::vec3(0,0,0)
+#endif
+#if !defined(VEC1)
 #define VEC1 glm::vec3(1,1,1)
+#endif
 
 class RsScene;
 class Object;
@@ -32,7 +36,7 @@ struct ObjectArgs {
 
 class Scene {
 private:
-    const char* m_name;
+    std::string m_name;
     Camera* m_currentCamera;
     unsigned int m_shader;
     glm::mat4 m_view;
@@ -44,7 +48,7 @@ private:
     float m_ambStrength;
     glm::vec4 m_ambColour;
 public:
-    Scene(const char* name);
+    Scene(std::string name);
     ~Scene();
     void updateMatrices();
     void render();

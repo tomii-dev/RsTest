@@ -108,7 +108,7 @@ namespace utils {
     // rs functions
     extern decltype(rs_initialiseGpGpuWithOpenGlContexts)* rsInitialiseGpuOpenGl;
     extern decltype(rs_getStreams)* rsGetStreams;
-    extern decltype(rs_sendFrame)* rsSendFrame;
+    extern decltype(rs_sendFrame2)* rsSendFrame;
     extern decltype(rs_getFrameCamera)* rsGetFrameCamera;
     extern decltype(rs_awaitFrameData)* rsAwaitFrameData;
     extern decltype(rs_logToD3)* logToD3;
@@ -116,7 +116,7 @@ namespace utils {
     extern decltype(rs_setSchema)* rsSetSchema;
     extern decltype(rs_getFrameParameters)* rsGetFrameParams;
     extern decltype(rs_getFrameImageData)* rsGetFrameImageData;
-    extern decltype(rs_getFrameImage)* rsGetFrameImage;
+    extern decltype(rs_getFrameImage2)* rsGetFrameImage;
 
     struct ShaderProgramSource {
         std::string vertexSource;

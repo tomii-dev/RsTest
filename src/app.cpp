@@ -11,15 +11,19 @@
 #include <d3/d3renderstream.h>
 #include <glm/glm.hpp>
 #include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
-#include <imgui/imgui_impl_opengl3.h>
-#include <imgui/imgui_stdlib.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 #include <fstream>
 #include <cmath>
 
 #include "scene.hpp"
 #include "object.hpp"
 #include "utils.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#undef STB_IMAGE_IMPLEMENTATION
 
 #pragma warning(disable:4996)
 
@@ -40,16 +44,17 @@ App::App() : m_window		(nullptr),
 int App::loadRenderStream()
 {
     HKEY key;
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\d3 Technologies\\d3 Production Suite", 0, KEY_READ, &key)) 
+    if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\d3 Technologies\\d3 Production Suite", 0, KEY_READ, &key)) 
         return utils::error("failed to open d3 registry key! do you have the disguise software installed?");
-    TCHAR buf[512];
-    DWORD bufSize = sizeof(buf);
-    if (RegQueryValueEx(key, L"exe path", 0, nullptr, reinterpret_cast<LPBYTE>(buf), &bufSize))
+    const DWORD bufSize = 512;
+    TCHAR buf[bufSize] = {0};
+    DWORD bufCount = bufSize;
+    if (RegQueryValueExA(key, "exe path", 0, nullptr, reinterpret_cast<LPBYTE>(buf), &bufCount))
         return utils::error("failed to query value of 'exe path' :(");
     if (!PathRemoveFileSpec(buf))
         return utils::error("failed to remove file spec from path :(");
-    _tcscat_s(buf, bufSize, L"\\d3renderstream.dll");
-    m_rsLib = LoadLibraryEx(buf, NULL,
+    strcat_s(buf, bufSize, "\\d3renderstream.dll");
+    m_rsLib = LoadLibraryExA(buf, NULL,
         LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR    | 
         LOAD_LIBRARY_SEARCH_APPLICATION_DIR | 
         LOAD_LIBRARY_SEARCH_SYSTEM32        | 
@@ -67,17 +72,22 @@ int App::loadRenderStream()
     LOAD_FN(rs_initialiseGpGpuWithOpenGlContexts);
     LOAD_FN(rs_logToD3);
     LOAD_FN(rs_getStreams);
-    LOAD_FN(rs_sendFrame);
+    LOAD_FN(rs_sendFrame2);
     LOAD_FN(rs_getFrameCamera);
     LOAD_FN(rs_awaitFrameData);
     LOAD_FN(rs_shutdown);
     LOAD_FN(rs_setSchema);
     LOAD_FN(rs_getFrameParameters);
     LOAD_FN(rs_getFrameImageData);
-    LOAD_FN(rs_getFrameImage);
+    LOAD_FN(rs_getFrameImage2);
 
     if (rs_initialise(RENDER_STREAM_VERSION_MAJOR, RENDER_STREAM_VERSION_MINOR))
         return utils::error("failed to init RenderStream!");
+
+    m_schema.engineName = "RSTest";
+    m_schema.engineVersion = "0.1";
+    m_schema.pluginVersion = "0.1";
+    m_schema.info = "OpenGL test engine for RenderStream";
 
     if (rs_setSchema(&m_schema))
         return utils::error("failed to set schema!");
@@ -85,14 +95,14 @@ int App::loadRenderStream()
     utils::rsInitialiseGpuOpenGl	= rs_initialiseGpGpuWithOpenGlContexts;
     utils::logToD3					= rs_logToD3;
     utils::rsGetStreams				= rs_getStreams;
-    utils::rsSendFrame				= rs_sendFrame;
+    utils::rsSendFrame				= rs_sendFrame2;
     utils::rsGetFrameCamera			= rs_getFrameCamera;
     utils::rsAwaitFrameData			= rs_awaitFrameData;
     utils::rsShutdown				= rs_shutdown;
     utils::rsSetSchema              = rs_setSchema;
     utils::rsGetFrameParams         = rs_getFrameParameters;
     utils::rsGetFrameImageData      = rs_getFrameImageData;
-    utils::rsGetFrameImage          = rs_getFrameImage;
+    utils::rsGetFrameImage          = rs_getFrameImage2;
 
     return 0;
 }
@@ -157,9 +167,10 @@ int App::sendFrames()
     const size_t nStreams = m_header ? m_header->nStreams : 0;
     for (size_t i = 0; i < nStreams; ++i) {
         const StreamDescription& desc = m_header->streams[i];
-        CameraResponseData res;
-        res.tTracked = m_frame.tTracked;
-        if (utils::rsGetFrameCamera(desc.handle, &res.camera) == RS_ERROR_SUCCESS) {
+        FrameResponseData response;
+        CameraResponseData cameraResponse;
+        cameraResponse.tTracked = m_frame.tTracked;
+        if (utils::rsGetFrameCamera(desc.handle, &cameraResponse.camera) == RS_ERROR_SUCCESS) {
             const RenderTarget& target = m_targets.at(desc.handle);
             setWindowWidth(desc.width);
             setWindowHeight(desc.height);
@@ -167,7 +178,13 @@ int App::sendFrames()
             glBindFramebuffer(GL_FRAMEBUFFER, target.frameBuf);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            m_currentScene = m_scenes[m_frame.scene];
+            if (m_frame.scene > m_scenes.size()) {
+                // scene is invalid, set it to 0.
+                utils::logToD3("got invalid scene, using default.");
+                m_frame.scene = 0;
+            }
+
+            m_currentScene = &m_scenes[m_frame.scene];
 
             // Add and remove objects/scenes created in ui
             if (!m_updateQueue.empty())
@@ -182,7 +199,7 @@ int App::sendFrames()
 
                 const SceneConfig* const addScene = m_updateQueue.addScene;
                 if (addScene)
-                    m_scenes.push_back(new Scene(addScene->name.c_str()));
+                    m_scenes.push_back(Scene(addScene->name));
 
                 m_updateQueue.clear();
             }
@@ -191,28 +208,32 @@ int App::sendFrames()
             
             const int objCount = m_currentScene->getObjectCount();
 
-            if (objCount)
-            {
-                if (m_imgData.size() != objCount)
-                    m_imgData.resize(objCount);
+            if (m_imgData.size() != objCount)
+                m_imgData.resize(objCount);
 
-                if (utils::rsGetFrameImageData(rsScene.hash, m_imgData.data(), m_imgData.size()))
-                    utils::logToD3(MSG(failed to get image param data));
+            if (utils::rsGetFrameImageData(rsScene.hash, m_imgData.data(), m_imgData.size()))
+                utils::logToD3(MSG(failed to get image param data));
 
-                if (m_params.size() != rsScene.nParameters)
-                    m_params.resize(rsScene.nParameters);
+            if (m_params.size() != rsScene.nParameters)
+                m_params.resize(rsScene.nParameters);
 
-                if (utils::rsGetFrameParams(rsScene.hash, m_params.data(), (m_params.size() - objCount) * sizeof(float)))
-                    continue;
-            }
+            if (utils::rsGetFrameParams(rsScene.hash, m_params.data(), (m_params.size() - objCount) * sizeof(float)))
+                continue;
 
             Camera* cam = m_currentScene->getCurrentCamera();
-            cam->setPosition(glm::vec3(res.camera.z, -res.camera.y, res.camera.x));
-            cam->setRotation(res.camera.rz, res.camera.ry, res.camera.rx);
+            cam->setPosition(glm::vec3(cameraResponse.camera.z, -cameraResponse.camera.y, cameraResponse.camera.x));
+            cam->setRotation(cameraResponse.camera.rz, cameraResponse.camera.ry, cameraResponse.camera.rx);
             m_currentScene->render();
-            SenderFrameTypeData data;
+            SenderFrame data;
+            data.type = RS_FRAMETYPE_OPENGL_TEXTURE;
             data.gl.texture = target.texture;
-            if (utils::rsSendFrame(desc.handle, RS_FRAMETYPE_OPENGL_TEXTURE, data, &res))
+            response.schemaHash = rsScene.hash;
+            response.cameraData = &cameraResponse;
+            response.parameterData = m_params.data();
+            response.parameterDataSize = m_params.size() * sizeof(float);
+            response.textData = nullptr;
+            response.textDataCount = 0;
+            if (utils::rsSendFrame(desc.handle, &data, &response))
                 return 1;
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
@@ -409,21 +430,16 @@ int App::run()
     glfwSetWindowSizeLimits(m_uiWindow, minW, minH, maxW, maxH);
 
     // find documents folder, where icon for ui window should be stored
-    wchar_t lDocPath[MAX_PATH];
-    HRESULT res = SHGetFolderPath(NULL, CSIDL_MYDOCUMENTS, NULL, SHGFP_TYPE_CURRENT, lDocPath);
+    char path[MAX_PATH];
+    HRESULT res = SHGetFolderPathA(NULL, CSIDL_MYDOCUMENTS, NULL, SHGFP_TYPE_CURRENT, path);
     if (res == S_OK)
     {
-        PathAppend(lDocPath, L"RsTest\\img\\icon.png");
+        PathAppendA(path, "RsTest\\img\\icon.png");
 
-        char iconPath[MAX_PATH];
-
-        // wide char str to char*
-        wcstombs(iconPath, lDocPath, MAX_PATH);
-
-        utils::logToD3(iconPath);
+        utils::logToD3(path);
 
         GLFWimage img;
-        img.pixels = stbi_load(iconPath, &img.width, &img.height, 0, 4);
+        img.pixels = stbi_load(path, &img.width, &img.height, 0, 4);
         glfwSetWindowIcon(m_uiWindow, 1, &img);
         stbi_image_free(img.pixels);
     }
@@ -455,8 +471,8 @@ int App::run()
     if(utils::rsInitialiseGpuOpenGl(wglContext, dc))
         utils::error("failed to initialise RenderStream GPU interop");
 
-    m_scenes.push_back(new Scene("scene 1"));
-    m_currentScene = m_scenes[0];
+    m_scenes.push_back(Scene("scene 1"));
+    m_currentScene = &m_scenes[0];
    
     m_frameInfo = FrameInfo(glfwGetTime());
 
@@ -479,10 +495,6 @@ int App::run()
 
         glfwPollEvents();
     }
-
-    // clear up
-    for (Scene* scene : m_scenes)
-        delete scene;
 
     return utils::rsShutdown();
 }
