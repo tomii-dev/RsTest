@@ -11,7 +11,7 @@
 #include <glm/vec4.hpp>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
-#include <d3/d3renderstream.h>
+#include <d3renderstream.h>
 #include <string>
 #include <vector>
 #include <unordered_map>

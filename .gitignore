@@ -15,4 +15,3 @@ include/stb/
 **.ini
 src/vendors/
 include/imgui/
-external/

@@ -3,7 +3,7 @@
 #include <glm/matrix.hpp>
 #include <vector>
 #include <string>
-#include <d3/d3renderstream.h>
+#include <d3renderstream.h>
 
 #include "camera.hpp"
 #include "utils.hpp"

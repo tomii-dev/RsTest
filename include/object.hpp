@@ -8,7 +8,7 @@
 #include "scene.hpp"
 #include "utils.hpp"
 
-#include "d3/d3renderstream.h"
+#include "d3renderstream.h"
 
 class Scene;
 

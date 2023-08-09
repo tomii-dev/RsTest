@@ -50,6 +50,7 @@ add_executable(${PROJECT_NAME}
 
 # build rules for deps
 add_subdirectory(external/glfw)
+add_subdirectory(external/glm)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/d3/include
@@ -60,6 +61,7 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/stb
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/d3/src/include
 )
 
 target_link_directories(${PROJECT_NAME}

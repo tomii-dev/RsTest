@@ -9,7 +9,7 @@
 #include <GLFW/glfw3.h>
 #include <windows.h>
 #include <unordered_map>
-#include <d3/d3renderstream.h>
+#include <d3renderstream.h>
 
 #include "utils.hpp"
 

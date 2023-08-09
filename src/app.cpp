@@ -8,7 +8,7 @@
 #include <shlobj.h>
 #include <tchar.h>
 #include <GLFW/glfw3native.h>
-#include <d3/d3renderstream.h>
+#include <d3renderstream.h>
 #include <glm/glm.hpp>
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_glfw.h>
